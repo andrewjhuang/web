@@ -204,6 +204,8 @@ input[type='range'] {
   margin: 0;
   padding: 0;
   font-size: 13px;
+  /* Room for all 7 rows up front, so the panel (and an embedding iframe) doesn't grow as events arrive. */
+  min-height: 218px;
 }
 
 .feed li {
@@ -1172,4 +1174,12 @@ input[type='range'] {
 
 .source a {
   color: var(--green-dark);
+}
+
+/* Embedded: never size the phone to the iframe's viewport (the iframe sizes to us). */
+@media (max-width: 420px) {
+  .page.embed .phone {
+    height: 760px;
+    width: 100%;
+  }
 }

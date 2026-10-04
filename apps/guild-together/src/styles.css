@@ -996,3 +996,8 @@ button.cell:hover {
     transition: none !important;
   }
 }
+
+/* Embedded: size to content, not the iframe's viewport (the iframe sizes to us). */
+.app.embed {
+  min-height: 0;
+}

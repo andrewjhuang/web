@@ -2288,3 +2288,11 @@ input[type='range'] {
     transition: none !important;
   }
 }
+
+/* Embedded: never size the phone to the iframe's viewport (the iframe sizes to us). */
+@media (max-width: 420px) {
+  .page.embed .phone {
+    height: 760px;
+    width: 100%;
+  }
+}

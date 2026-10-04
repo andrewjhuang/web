@@ -37,3 +37,5 @@ Add `?embed` to the URL to hide the footer credits and tighten padding:
   title="Guild: Grow in good company"
 ></iframe>
 ```
+
+See [EMBEDS.md](EMBEDS.md) for copy-paste embed code for each project.
