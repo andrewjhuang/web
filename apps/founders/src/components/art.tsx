@@ -17,16 +17,16 @@ export function Logomark({ size = 40, light = false }: { size?: number; light?: 
   return <img src={light ? '/logomark-light.png' : '/logomark.png'} width={size} height={Math.round((size * 189) / 278)} alt="" aria-hidden className="logomark" />
 }
 
-/** Oval crest, in the style of a 1930s souvenir-menu trademark. */
+/** Round crest, in the style of a 1930s souvenir-menu trademark; round to fit the wide tree. */
 export function Crest({ size = 64 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 80 100" width={size * 0.8} height={size} aria-hidden className="crest">
-      <ellipse cx="40" cy="54" rx="34" ry="42" fill="var(--pacific)" stroke="var(--ink)" strokeWidth="2.5" />
-      <ellipse cx="40" cy="54" rx="29" ry="37" fill="none" stroke="var(--paper)" strokeWidth="1.2" />
-      <image href="/logomark-light.png" x="14" y="36" width="52" height="35" />
-      <path d="M22 84q18 8 36 0" stroke="var(--marigold)" strokeWidth="2.5" fill="none" />
-      <rect x="28" y="2" width="24" height="12" rx="2" fill="var(--ink)" />
-      <path d={starPath(40, 8, 4.5)} fill="var(--marigold)" />
+    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden className="crest">
+      <circle cx="50" cy="52" r="45" fill="var(--pacific)" stroke="var(--ink)" strokeWidth="3" />
+      <circle cx="50" cy="52" r="39" fill="none" stroke="var(--paper)" strokeWidth="1.3" />
+      <image href="/logomark-light.png" x="17" y="29" width="66" height="45" />
+      <path d="M30 80q20 9 40 0" stroke="var(--marigold)" strokeWidth="2.8" fill="none" />
+      <circle cx="50" cy="7" r="7" fill="var(--ink)" />
+      <path d={starPath(50, 7, 5)} fill="var(--marigold)" />
     </svg>
   )
 }
