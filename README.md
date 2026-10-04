@@ -8,6 +8,7 @@ apps/
   campus-park/      ParkCampus: sensor-powered Stanford parking app, with a live sensor simulation
   fizz/             Fizz: research-led redesign of the campus marketplace, plus feed, messages and profile
   scream-room/      I Scream Room: a playable mini game of the StartX soundproof room and scream kit
+  founders/         Founders Farmstand: farm-to-table cafe website, 1939 World's Fair look, desktop + mobile
 ```
 
 ## Running an app locally
