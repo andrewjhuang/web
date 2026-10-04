@@ -55,7 +55,10 @@ button {
 
 .page.embed {
   padding: 8px;
-  min-height: 0;
+  /* Fill the iframe and center the game, so a tall, narrow box doesn't leave it stuck at the top. */
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .stage-wrap {

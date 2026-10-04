@@ -12,12 +12,26 @@ Put each block at the top of its project page, right after the header. Every emb
 | --- | --- |
 | **Webflow** | Drag in an **Embed** element (Add panel → Components → Embed) directly under the page header, paste the code, Save. Custom code embeds need a paid site plan. |
 | **Squarespace** | Add a **Code** block under the header, set it to HTML, paste. If your plan doesn't run scripts in code blocks, the embed still works at the fallback height. |
-| **Framer** | Insert → **Embed**, choose **HTML**, paste. Set the Embed's width to **Fill** and give it a fixed height from the table below; Framer sizes embed boxes itself, so the auto-height script won't resize it. Use breakpoints to set the phone height. |
+| **Framer** | Insert → **Embed**, choose **HTML**, paste. Set the Embed's width to **Fill** and pick **any height that fits your page** (see below). Framer sizes embed boxes itself, so the prototype adapts to the box instead. |
 
-## Heights (for Framer, or as the fallback)
+## How the embeds fit any box
 
-| Project | Desktop | Phone (≈390px wide) |
+- **Shorter than the prototype?** It scales down to fit, so nothing is cut off and there's no inner scrolling. Good down to roughly 55% size; below that it scrolls instead so text stays readable.
+- **Narrow box (under 760px wide, e.g. Framer's phone breakpoint)?** CampusPark and Fizz show just the phone and hide the side panel. Guild scrolls inside its box.
+- **I Scream Room** always scales and centers the game in whatever box it gets.
+
+## Suggested heights in Framer
+
+Pick whatever fits your layout; these just look good.
+
+| Project | Desktop | Phone breakpoint |
 | --- | --- | --- |
+| Guild | 600–700px | 640px (scrolls inside) |
+| CampusPark | 600–700px | 640–760px |
+| Fizz | 600–700px | 640–760px |
+| I Scream Room | 560–620px | 260px, or more if you want the dark padding |
+
+--- | --- | --- |
 | Guild | 840px | 1200px |
 | CampusPark | 810px | 1720px |
 | Fizz | 830px | 1690px |

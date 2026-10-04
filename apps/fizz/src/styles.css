@@ -2296,3 +2296,14 @@ input[type='range'] {
     width: 100%;
   }
 }
+
+/* Narrow embeds: just the phone. */
+.embed-compact .side,
+.embed-compact .credits {
+  display: none;
+}
+
+.embed-compact .page {
+  padding: 0;
+  gap: 0;
+}
