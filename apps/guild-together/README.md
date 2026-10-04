@@ -1,6 +1,6 @@
 # Guild — Grow in good company
 
-An interactive prototype combining the three concepts from our Guild needfinding study of retail workers (Abigail DeLory, Andrew Huang, Hazel Jones):
+An interactive prototype combining the three concepts from our Guild needfinding study of retail workers (Abigail, Andrew & Hazel):
 
 1. **Welcome / Marketing rebrand.** Toggle Guild's current competitive copy ("compared to their colleagues") against a collaborative rewrite.
 2. **About you.** Pick courses, interests, and weekly availability.

@@ -6,6 +6,7 @@ Interactive project prototypes, each deployable as its own public Vercel site an
 apps/
   guild-together/   Guild concept: rebrand + study buddies + coworker nomination, as one flow
   campus-park/      CampusPark: sensor-powered Stanford parking app, with a live sensor simulation
+  fizz/             Fizz: research-led redesign of the campus marketplace, plus feed, messages and profile
 ```
 
 ## Running an app locally

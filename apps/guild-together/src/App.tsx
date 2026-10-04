@@ -67,7 +67,7 @@ export default function App() {
 
       {!embed && (
         <footer className="credits">
-          Concept prototype from a needfinding study of retail workers, by Abigail DeLory, Andrew Huang & Hazel Jones. Not
+          Concept prototype from a needfinding study of retail workers, by Abigail, Andrew & Hazel. Not
           affiliated with Guild. People shown are composites from our interviews.
         </footer>
       )}

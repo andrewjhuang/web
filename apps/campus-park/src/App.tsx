@@ -226,7 +226,7 @@ export default function App() {
         </nav>
       </div>
 
-      {!embed && <footer className="credits">Concept prototype by Andrew Huang · Permit rules and prices from Stanford Transportation (2026); map is approximate and occupancy is simulated.</footer>}
+      {!embed && <footer className="credits">Concept prototype by Andrew · Permit rules and prices from Stanford Transportation (2026); map is approximate and occupancy is simulated.</footer>}
     </div>
   )
 }
