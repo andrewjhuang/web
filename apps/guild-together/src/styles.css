@@ -519,6 +519,7 @@ button.cell:hover {
 
 .avatar {
   border-radius: 50%;
+  object-fit: cover;
   display: grid;
   place-items: center;
   font-family: var(--serif);
@@ -788,6 +789,16 @@ button.cell:hover {
   opacity: 1;
   font-weight: 700;
   color: var(--forest);
+}
+
+.joined-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.joined-head .avatar {
+  box-shadow: -4px 4px 0 var(--blush);
 }
 
 /* ---------- Circle ---------- */

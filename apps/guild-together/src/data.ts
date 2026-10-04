@@ -54,6 +54,7 @@ export type Person = {
   interests: string[]
   availability: Slot[]
   color: string
+  photo?: string
 }
 
 const slots = (pairs: [number, number][]): Slot[] => pairs.map(([d, b]) => slot(d, b))
@@ -81,6 +82,7 @@ export const PEOPLE: Person[] = [
     interests: ['Music', 'Cooking'],
     availability: slots([[0, 0], [1, 2], [3, 2], [4, 0], [5, 0], [6, 2]]),
     color: 'var(--peach)',
+    photo: '/people/blessing.jpg',
   },
   {
     id: 'june',
@@ -114,6 +116,7 @@ export const PEOPLE: Person[] = [
     interests: ['Cooking', 'Music'],
     availability: slots([[0, 0], [1, 0], [2, 0], [5, 0], [6, 0]]),
     color: 'var(--blush)',
+    photo: '/people/brian.jpg',
   },
   {
     id: 'diego',

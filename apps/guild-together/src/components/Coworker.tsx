@@ -8,6 +8,7 @@ export type Coworker = {
   interests: string[]
   stage: 'draft' | 'invited' | 'joined'
   together: string[]
+  photo?: string
 }
 
 export const DEFAULT_COWORKER: Coworker = {
@@ -16,6 +17,7 @@ export const DEFAULT_COWORKER: Coworker = {
   interests: ['Yoga', 'Music'],
   stage: 'draft',
   together: [],
+  photo: '/people/layla.jpg',
 }
 
 const toggle = (list: string[], item: string) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item])
@@ -53,7 +55,7 @@ export function CoworkerStep({
             <div className="form-grid single">
               <label>
                 <span>Coworker's first name</span>
-                <input value={coworker.name} onChange={(e) => set('name', e.target.value)} />
+                <input value={coworker.name} onChange={(e) => setCoworker({ ...coworker, name: e.target.value, photo: undefined })} />
               </label>
             </div>
             <fieldset>
@@ -189,7 +191,10 @@ function Joined({
   return (
     <>
       <p className="eyebrow">Let's unlock opportunity together</p>
-      <h2 className="title">{coworker.name} joined Guild!</h2>
+      <div className="joined-head">
+        <Avatar name={coworker.name} color="var(--blush)" photo={coworker.photo} size={72} />
+        <h2 className="title">{coworker.name} joined Guild!</h2>
+      </div>
       <p className="lede">
         Here are courses you're both interested in. Explore them together.
         {sharedInterests.length > 0 && <> You also share a love of {sharedInterests.map((s) => s.toLowerCase()).join(' & ')}.</>}

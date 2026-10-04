@@ -2,7 +2,7 @@ import { PEOPLE, type Profile } from '../data'
 import { scoreMatch } from '../match'
 import type { Coworker } from './Coworker'
 
-type Node = { id: string; name: string; color: string; sub: string; courses: string[]; hours: number }
+type Node = { id: string; name: string; color: string; photo?: string; sub: string; courses: string[]; hours: number }
 
 export function Circle({
   profile,
@@ -19,13 +19,13 @@ export function Circle({
 }) {
   const nodes: Node[] = PEOPLE.filter((p) => circle.includes(p.id)).map((p) => {
     const m = scoreMatch(profile, p)
-    return { id: p.id, name: p.name, color: p.color, sub: `Study buddy · ${p.store}`, courses: m.sharedCourses, hours: m.sharedSlots.length }
+    return { id: p.id, name: p.name, color: p.color, photo: p.photo, sub: `Study buddy · ${p.store}`, courses: m.sharedCourses, hours: m.sharedSlots.length }
   })
   if (coworker.stage === 'joined') {
     const courses = coworker.together.length
       ? coworker.together
       : profile.courses.filter((c) => coworker.courses.includes(c))
-    nodes.push({ id: 'coworker', name: coworker.name, color: 'var(--blush)', sub: `Coworker · ${profile.store}`, courses, hours: 0 })
+    nodes.push({ id: 'coworker', name: coworker.name, color: 'var(--blush)', photo: coworker.photo, sub: `Coworker · ${profile.store}`, courses, hours: 0 })
   }
 
   const courseCount = new Set(nodes.flatMap((n) => n.courses)).size
@@ -97,10 +97,22 @@ export function Circle({
                         </text>
                       </g>
                     )}
-                    <circle cx={n.x} cy={n.y} r={38} fill={n.color} className="node" />
-                    <text x={n.x} y={n.y + 10} textAnchor="middle" className="node-initial">
-                      {n.name.charAt(0).toUpperCase()}
-                    </text>
+                    {n.photo ? (
+                      <>
+                        <clipPath id={`clip-${n.id}`}>
+                          <circle cx={n.x} cy={n.y} r={38} />
+                        </clipPath>
+                        <image href={n.photo} x={n.x - 38} y={n.y - 38} width={76} height={76} clipPath={`url(#clip-${n.id})`} preserveAspectRatio="xMidYMid slice" />
+                        <circle cx={n.x} cy={n.y} r={38} fill="none" className="node" />
+                      </>
+                    ) : (
+                      <>
+                        <circle cx={n.x} cy={n.y} r={38} fill={n.color} className="node" />
+                        <text x={n.x} y={n.y + 10} textAnchor="middle" className="node-initial">
+                          {n.name.charAt(0).toUpperCase()}
+                        </text>
+                      </>
+                    )}
                     <text x={n.x} y={n.above ? nameY - 14 : nameY} textAnchor="middle" className="node-name">
                       {n.name}
                     </text>

@@ -62,7 +62,7 @@ export function Buddies({
                       className={`match-card ${openId === m.person.id ? 'active' : ''}`}
                       onClick={() => setOpenId(m.person.id)}
                     >
-                      <Avatar name={m.person.name} color={m.person.color} size={56} />
+                      <Avatar name={m.person.name} color={m.person.color} photo={m.person.photo} size={56} />
                       <div className="match-info">
                         <div className="match-name">
                           {m.person.name}
@@ -122,7 +122,7 @@ function BuddyDetail({
   return (
     <aside className="detail">
       <div className="detail-head">
-        <Avatar name={p.name} color={p.color} size={88} />
+        <Avatar name={p.name} color={p.color} photo={p.photo} size={88} />
         <div>
           <p className="eyebrow">Your study buddy</p>
           <h3 className="name">{p.name}</h3>

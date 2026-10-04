@@ -1,7 +1,10 @@
 import { useId, type ReactNode } from 'react'
 import { BLOCKS, DAYS, slot, type Slot } from '../data'
 
-export function Avatar({ name, color, size = 72 }: { name: string; color: string; size?: number }) {
+export function Avatar({ name, color, photo, size = 72 }: { name: string; color: string; photo?: string; size?: number }) {
+  if (photo) {
+    return <img className="avatar" src={photo} alt={name} width={size} height={size} style={{ width: size, height: size }} />
+  }
   return (
     <div className="avatar" style={{ background: color, width: size, height: size, fontSize: size * 0.42 }} aria-hidden>
       {name.trim().charAt(0).toUpperCase() || '?'}
