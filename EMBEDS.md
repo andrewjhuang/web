@@ -17,7 +17,8 @@ Put each block at the top of its project page, right after the header. Every emb
 ## How the embeds fit any box
 
 - **Shorter than the prototype?** It scales down to fit, so nothing is cut off and there's no inner scrolling. Good down to roughly 55% size; below that it scrolls instead so text stays readable.
-- **Narrow box (under 760px wide, e.g. Framer's phone breakpoint)?** CampusPark and Fizz show just the phone and hide the side panel. Guild scrolls inside its box.
+- **Narrow box (under 760px wide, e.g. Framer's phone breakpoint)?** CampusPark and Fizz show just the phone and hide the side panel.
+- **Guild** is a fixed-size card that fills the box; every step is the same size and longer steps scroll inside the card.
 - **I Scream Room** always scales and centers the game in whatever box it gets.
 
 ## Framer (Container → Stack → Embed)
@@ -41,7 +42,7 @@ Embed heights:
 
 | Project | Desktop | Phone breakpoint |
 | --- | --- | --- |
-| Guild | 600–700 | 640 (scrolls inside) |
+| Guild | 600–700 | 640 |
 | CampusPark | 600–700 | 700 |
 | Fizz | 600–700 | 700 |
 | I Scream Room | 560–620 | 260 |
@@ -52,18 +53,13 @@ For I Scream Room's “use my real voice” mic option, use **HTML** type instea
 <iframe src="https://scream-room.vercel.app/?embed" allow="microphone" style="width:100%;height:100%;border:0;border-radius:16px"></iframe>
 ```
 
---- | --- | --- |
-| Guild | 600–700px | 640px (scrolls inside) |
-| CampusPark | 600–700px | 640–760px |
-| Fizz | 600–700px | 640–760px |
-| I Scream Room | 560–620px | 260px, or more if you want the dark padding |
 
 ---
 
 ## Guild — “Grow in good company”
 
 ```html
-<iframe class="proto-embed" src="https://web-guild-together.vercel.app/?embed" title="Guild: Grow in good company, interactive prototype" loading="lazy" allow="clipboard-write" style="display:block;width:100%;height:840px;border:0;border-radius:16px;overflow:hidden"></iframe>
+<iframe class="proto-embed" src="https://web-guild-together.vercel.app/?embed" title="Guild: Grow in good company, interactive prototype" loading="lazy" allow="clipboard-write" style="display:block;width:100%;height:680px;border:0;border-radius:16px;overflow:hidden"></iframe>
 <script>
 window.addEventListener('message', function (e) {
   if (!e.data || e.data.type !== 'prototype-height') return;
