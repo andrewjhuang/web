@@ -1,59 +1,76 @@
 import { useEffect, useRef, useState } from 'react'
-import { LISTINGS, type Listing } from './data'
-import { Feed, Profile } from './components/Feed'
+import { LISTINGS, POSTS, RECENT_SEARCHES, type Listing } from './data'
+import { ClubPage, Discover, Home, PostDetail, Profile, type Social } from './components/Feed'
 import { Inbox, ThreadView, type Msg, type Thread } from './components/Inbox'
-import { ListingDetail, Market, type MarketView, type MyStats } from './components/Market'
+import { AllCategories, ListingDetail, MarketHome, MyMarket, Results, SearchScreen, type MyStats } from './components/Market'
 import { Sell } from './components/Sell'
-import { Bubbles, Icon } from './components/ui'
+import { FizzMark, Icon } from './components/ui'
 
-type Tab = 'feed' | 'market' | 'sell' | 'inbox' | 'me'
+type Tab = 'home' | 'discover' | 'market' | 'messages' | 'profile'
+type Screen =
+  | { k: 'root' }
+  | { k: 'allcats' }
+  | { k: 'category'; name: string }
+  | { k: 'searching'; q: string }
+  | { k: 'results'; q: string }
+  | { k: 'listing'; id: string }
+  | { k: 'mymarket' }
+  | { k: 'sell' }
+  | { k: 'post'; id: string }
+  | { k: 'club'; id: string }
+  | { k: 'thread'; id: string }
 
 const embed = new URLSearchParams(window.location.search).has('embed')
+const ROOT: Screen = { k: 'root' }
+const FRESH_STACKS = (): Record<Tab, Screen[]> => ({ home: [ROOT], discover: [ROOT], market: [ROOT], messages: [ROOT], profile: [ROOT] })
 
 const INITIAL_THREADS: Thread[] = [
   {
-    id: 't-fridge',
-    listingId: 'minifridge',
+    id: 't-scooter',
+    listingId: 'scooter',
     seller: 'comet',
     unread: true,
     messages: [
       { from: 'me', kind: 'text', text: 'Is this still available?' },
-      { from: 'them', kind: 'text', text: 'Yep! Just dropped the price to $50 too.' },
+      { from: 'them', kind: 'text', text: 'Yep! Just dropped it to $200 too.' },
     ],
   },
 ]
 
-/** The marketplace redesign, as a guided list in the side panel. */
-const CHANGES: { title: string; body: string; go: string }[] = [
-  {
-    title: 'Browse by category, filter what matters',
-    body: 'Category chips, sort by deal, and filters for price, condition, pickup spot and verified sellers.',
-    go: 'browse',
-  },
-  {
-    title: 'Trust signals on every listing',
-    body: '.edu-verified badge, rating, sales count and typical reply time, so an anonymous seller still feels safe.',
-    go: 'listing',
-  },
-  { title: 'Safe public meetup spots', body: 'Sellers pick a public campus spot instead of sharing a dorm room. Pay on pickup.', go: 'listing' },
-  { title: 'Structured offers, not DM haggling', body: 'Quick offer amounts and a note. The seller gets a card to accept or counter.', go: 'listing' },
-  { title: 'Offers and meetups live in the chat', body: 'Accepted offers turn into a meetup card with time options.', go: 'thread' },
-  { title: 'Sell in three steps with a price guide', body: 'Auto-suggested category and a price range from similar listings.', go: 'sell' },
-  { title: 'Saved items with price-drop alerts', body: 'Save with ♡ and get told when the price falls.', go: 'saved' },
-  { title: 'A dashboard for your listings', body: 'Views, saves and a one-tap “Mark sold”.', go: 'mine' },
-  { title: 'Marketplace in the feed', body: 'A “Fresh on Marketplace” strip connects the feed to buying and selling.', go: 'feed' },
+/** What's from the team's Figma vs. what this prototype adds, for the side panel. */
+const FROM_FIGMA: { title: string; go: [Tab, Screen[]] }[] = [
+  { title: 'Categories grid and Recent Listings', go: ['market', [ROOT]] },
+  { title: 'All Categories', go: ['market', [ROOT, { k: 'allcats' }]] },
+  { title: 'Search with recent searches', go: ['market', [ROOT, { k: 'searching', q: '' }]] },
+  { title: 'Results with Filter and Sort', go: ['market', [ROOT, { k: 'results', q: 'mason jar' }]] },
+  { title: 'Listing detail: Overview + Message Seller', go: ['market', [ROOT, { k: 'listing', id: 'ebike' }]] },
+]
+
+const ADDED: { title: string; body: string; go: [Tab, Screen[]] }[] = [
+  { title: 'Filters and sort that work', body: 'Filter by expands into Womens/Mens, condition, size and a price cap. Sort re-orders live.', go: ['market', [ROOT, { k: 'category', name: 'Clothing' }]] },
+  { title: 'Make an offer', body: 'Quick amounts and a note, sent as a card the seller can accept or counter.', go: ['market', [ROOT, { k: 'listing', id: 'ebike' }]] },
+  { title: 'Offers and meetups in chat', body: 'Accept a counter-offer, then pick a time from the meetup card.', go: ['messages', [ROOT, { k: 'thread', id: 't-scooter' }]] },
+  { title: 'Trust and safety on every listing', body: 'Verified-student badge, rating, sales and reply time, plus a public meetup spot.', go: ['market', [ROOT, { k: 'listing', id: 'leggings' }]] },
+  { title: 'Save with price-drop alerts', body: 'Tap ♡ on any listing. Saved items that drop in price show up on the Marketplace home.', go: ['market', [ROOT, { k: 'mymarket' }]] },
+  { title: 'Helpful empty states', body: '“No results found” now offers “Notify me when listed” and “Sell one”.', go: ['market', [ROOT, { k: 'category', name: 'Hats' }]] },
+  { title: 'Live search suggestions', body: 'Matching listings appear as you type, above your recent searches.', go: ['market', [ROOT, { k: 'searching', q: 'lulu' }]] },
+  { title: 'Sell in three steps', body: 'Upload a photo, get a suggested category and a price range from similar listings, preview, post.', go: ['market', [ROOT, { k: 'sell' }]] },
+  { title: 'My Marketplace', body: 'Your listings with live views and saves, “Mark as sold”, and everything you saved.', go: ['market', [ROOT, { k: 'mymarket' }]] },
 ]
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('market')
-  const [marketView, setMarketView] = useState<MarketView>('browse')
+  const [stacks, setStacks] = useState<Record<Tab, Screen[]>>(FRESH_STACKS)
   const [listings, setListings] = useState<Listing[]>(LISTINGS)
   const [mine, setMine] = useState<string[]>([])
-  const [myStats, setMyStats] = useState<MyStats>({})
-  const [saved, setSaved] = useState<string[]>(['minifridge', 'patagonia'])
-  const [openListing, setOpenListing] = useState<string | null>(null)
+  const [stats, setStats] = useState<MyStats>({})
+  const [saved, setSaved] = useState<string[]>(['scooter'])
+  const [alerts, setAlerts] = useState<string[]>([])
+  const [recents, setRecents] = useState(RECENT_SEARCHES)
   const [threads, setThreads] = useState<Thread[]>(INITIAL_THREADS)
-  const [openThread, setOpenThread] = useState<string | null>(null)
+  const [votes, setVotes] = useState<Record<string, 1 | -1 | 0>>({})
+  const [bookmarks, setBookmarks] = useState<string[]>([])
+  const [following, setFollowing] = useState<string[]>(['arbor'])
   const [toast, setToast] = useState<string | null>(null)
   const timers = useRef<number[]>([])
 
@@ -70,7 +87,7 @@ export default function App() {
   useEffect(() => {
     if (!mine.length) return
     const t = setInterval(() => {
-      setMyStats((s) => {
+      setStats((s) => {
         const next = { ...s }
         for (const id of mine) if (!next[id]?.sold && Math.random() < 0.6) next[id] = { ...next[id], views: (next[id]?.views ?? 0) + 1 }
         return next
@@ -79,13 +96,30 @@ export default function App() {
     return () => clearInterval(t)
   }, [mine])
 
-  const toggleSave = (id: string) => {
-    setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
-    if (!saved.includes(id)) setToast("Saved. We'll tell you if the price drops.")
+  /* ---------- navigation ---------- */
+  const stack = stacks[tab]
+  const screen = stack[stack.length - 1]
+  const push = (s: Screen, t: Tab = tab) => {
+    setStacks((st) => ({ ...st, [t]: [...st[t], s] }))
+    setTab(t)
+  }
+  const replace = (s: Screen) => setStacks((st) => ({ ...st, [tab]: [...st[tab].slice(0, -1), s] }))
+  const back = () => setStacks((st) => ({ ...st, [tab]: st[tab].length > 1 ? st[tab].slice(0, -1) : st[tab] }))
+  const go = ([t, s]: [Tab, Screen[]]) => {
+    setStacks((st) => ({ ...st, [t]: s }))
+    setTab(t)
+    if (t === 'messages') setThreads((ts) => ts.map((x) => ({ ...x, unread: false })))
   }
 
+  /* ---------- marketplace actions ---------- */
+  const toggleSave = (id: string) => {
+    if (!saved.includes(id)) setToast("Saved. We'll tell you if the price drops.")
+    setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
+  }
+  const toggleAlert = (key: string) => setAlerts((a) => (a.includes(key) ? a.filter((x) => x !== key) : [...a, key]))
+
   const updateThread = (id: string, fn: (t: Thread) => Thread) => setThreads((ts) => ts.map((t) => (t.id === id ? fn(t) : t)))
-  const push = (id: string, ...msgs: Msg[]) => updateThread(id, (t) => ({ ...t, messages: [...t.messages, ...msgs] }))
+  const pushMsg = (id: string, ...msgs: Msg[]) => updateThread(id, (t) => ({ ...t, messages: [...t.messages, ...msgs] }))
 
   const threadFor = (l: Listing) => {
     const existing = threads.find((t) => t.listingId === l.id)
@@ -95,25 +129,14 @@ export default function App() {
     return id
   }
 
-  const openChat = (l: Listing) => {
-    const id = threadFor(l)
-    setOpenListing(null)
-    setOpenThread(id)
-    setTab('inbox')
-  }
+  const openChat = (l: Listing) => go(['messages', [ROOT, { k: 'thread', id: threadFor(l) }]])
 
   const sendOffer = (l: Listing, amount: number, note: string) => {
     const id = threadFor(l)
-    push(
-      id,
-      { from: 'me', kind: 'offer', amount, status: 'pending' },
-      ...(note.trim() ? [{ from: 'me' as const, kind: 'text' as const, text: note.trim() }] : []),
-    )
-    setOpenListing(null)
-    setOpenThread(id)
-    setTab('inbox')
+    pushMsg(id, { from: 'me', kind: 'offer', amount, status: 'pending' }, ...(note.trim() ? [{ from: 'me' as const, kind: 'text' as const, text: note.trim() }] : []))
+    go(['messages', [ROOT, { k: 'thread', id }]])
     setToast('Offer sent')
-    // Simulated seller: accepts reasonable offers, counters low ones.
+    // Simulated seller: accepts offers at 85%+ of asking, counters lower ones.
     later(() => {
       setThreads((ts) =>
         ts.map((t) => {
@@ -122,16 +145,12 @@ export default function App() {
           const idx = msgs.map((m) => m.kind === 'offer' && m.from === 'me' && m.status === 'pending').lastIndexOf(true)
           if (idx === -1) return t
           const offer = msgs[idx] as Extract<Msg, { kind: 'offer' }>
-          if (l.price === 0 || amount >= l.price * 0.85) {
+          if (amount >= l.price * 0.85) {
             msgs[idx] = { ...offer, status: 'accepted' }
-            msgs.push(
-              { from: 'them', kind: 'text', text: l.price === 0 ? "It's yours! 🙌" : `Deal at $${amount}! 🙌` },
-              { from: 'them', kind: 'meetup', spot: l.meetup },
-            )
+            msgs.push({ from: 'them', kind: 'text', text: `Deal at $${amount}! 🙌` }, { from: 'them', kind: 'meetup', spot: l.meetup })
           } else {
-            const counter = Math.round((amount + l.price) / 2)
             msgs[idx] = { ...offer, status: 'countered' }
-            msgs.push({ from: 'them', kind: 'text', text: 'Could we meet in the middle?' }, { from: 'them', kind: 'offer', amount: counter, status: 'pending' })
+            msgs.push({ from: 'them', kind: 'text', text: 'Could we meet in the middle?' }, { from: 'them', kind: 'offer', amount: Math.round((amount + l.price) / 2), status: 'pending' })
           }
           return { ...t, messages: msgs }
         }),
@@ -146,15 +165,13 @@ export default function App() {
       const msgs = [...th.messages]
       const m = msgs[index] as Extract<Msg, { kind: 'offer' }>
       msgs[index] = { ...m, status: accept ? 'accepted' : 'declined' }
-      msgs.push(
-        accept ? { from: 'them', kind: 'meetup', spot: l.meetup } : { from: 'them', kind: 'text', text: 'No worries, let me know if you change your mind!' },
-      )
+      msgs.push(accept ? { from: 'them', kind: 'meetup', spot: l.meetup } : { from: 'them', kind: 'text', text: 'No worries, let me know if you change your mind!' })
       return { ...th, messages: msgs }
     })
   }
 
   const sendText = (threadId: string, text: string) => {
-    push(threadId, { from: 'me', kind: 'text', text })
+    pushMsg(threadId, { from: 'me', kind: 'text', text })
     const reply = /available/i.test(text)
       ? 'Yes, still available!'
       : /hold/i.test(text)
@@ -162,14 +179,13 @@ export default function App() {
         : /somewhere else|meet/i.test(text)
           ? 'Tresidder or Green Library both work for me.'
           : 'Sounds good 👍'
-    later(() => push(threadId, { from: 'them', kind: 'text', text: reply }), 1200)
+    later(() => pushMsg(threadId, { from: 'them', kind: 'text', text: reply }), 1200)
   }
 
   const pickTime = (threadId: string, index: number, time: string) => {
     updateThread(threadId, (t) => {
       const msgs = [...t.messages]
-      const m = msgs[index] as Extract<Msg, { kind: 'meetup' }>
-      msgs[index] = { ...m, time }
+      msgs[index] = { ...(msgs[index] as Extract<Msg, { kind: 'meetup' }>), time }
       return { ...t, messages: msgs }
     })
     setToast(`Meetup set for ${time}`)
@@ -178,45 +194,152 @@ export default function App() {
   const post = (l: Listing) => {
     setListings((ls) => [l, ...ls])
     setMine((m) => [l.id, ...m])
-    setMyStats((s) => ({ ...s, [l.id]: { views: 0 } }))
-    setTab('market')
-    setMarketView('mine')
+    setStats((s) => ({ ...s, [l.id]: { views: 0 } }))
+    go(['market', [ROOT, { k: 'mymarket' }]])
     setToast('Listed! 🎉')
   }
 
-  const go = (target: string) => {
-    setOpenListing(null)
-    setOpenThread(null)
-    if (target === 'feed') setTab('feed')
-    else if (target === 'sell') setTab('sell')
-    else if (target === 'thread') {
-      setTab('inbox')
-      setOpenThread(threads[0]?.id ?? null)
-    } else if (target === 'listing') {
-      setTab('market')
-      setOpenListing('airpods')
-    } else {
-      setTab('market')
-      setMarketView(target as MarketView)
+  const social: Social = {
+    votes,
+    setVote: (id, v) => setVotes((x) => ({ ...x, [id]: v })),
+    bookmarks,
+    toggleBookmark: (id) => setBookmarks((b) => (b.includes(id) ? b.filter((x) => x !== id) : [...b, id])),
+    following,
+    toggleFollow: (c) => setFollowing((f) => (f.includes(c) ? f.filter((x) => x !== c) : [...f, c])),
+    onOpenPost: (id) => push({ k: 'post', id }),
+    onOpenClub: (id) => push({ k: 'club', id }),
+  }
+
+  const marketNav = {
+    back: stack.length > 1 ? back : undefined,
+    onSearch: () => push({ k: 'searching', q: screen.k === 'results' ? screen.q : '' }),
+    onMine: () => push({ k: 'mymarket' }),
+  }
+  const openListing = (id: string) => push({ k: 'listing', id })
+  const startSell = () => push({ k: 'sell' }, 'market')
+
+  /* ---------- render current screen ---------- */
+  const render = () => {
+    switch (screen.k) {
+      case 'allcats':
+        return <AllCategories nav={marketNav} onCategory={(name) => push({ k: 'category', name })} />
+      case 'category':
+        return (
+          <Results
+            key={screen.name}
+            title={screen.name}
+            base={listings.filter((l) => l.categories.includes(screen.name))}
+            saved={saved}
+            nav={marketNav}
+            alerts={alerts}
+            onToggleAlert={toggleAlert}
+            onOpen={openListing}
+            onSave={toggleSave}
+            onSell={startSell}
+          />
+        )
+      case 'searching':
+        return <SearchScreen listings={listings} recents={recents} setRecents={setRecents} initial={screen.q} onSubmit={(q) => replace({ k: 'results', q })} onCancel={back} />
+      case 'results': {
+        const words = screen.q.toLowerCase().split(/\s+/).filter(Boolean)
+        const base = listings.filter((l) => {
+          const hay = `${l.title} ${l.categories.join(' ')} ${l.description}`.toLowerCase()
+          // Match any word, so "mason jar" also surfaces other tableware like the mockup.
+          return words.some((w) => hay.includes(w.replace(/s$/, '')))
+        })
+        const related = base.length ? listings.filter((l) => !base.includes(l) && l.categories.some((c) => base[0].categories.includes(c))) : []
+        return (
+          <Results
+            key={screen.q}
+            title={screen.q}
+            query={screen.q}
+            base={[...base, ...related]}
+            saved={saved}
+            nav={marketNav}
+            alerts={alerts}
+            onToggleAlert={toggleAlert}
+            onOpen={openListing}
+            onSave={toggleSave}
+            onSell={startSell}
+          />
+        )
+      }
+      case 'listing': {
+        const l = listings.find((x) => x.id === screen.id)!
+        return (
+          <ListingDetail
+            key={l.id}
+            l={l}
+            saved={saved.includes(l.id)}
+            isMine={mine.includes(l.id)}
+            sold={!!stats[l.id]?.sold}
+            back={back}
+            onSave={() => toggleSave(l.id)}
+            onMessage={() => openChat(l)}
+            onOffer={(a, n) => sendOffer(l, a, n)}
+            onMarkSold={() => {
+              setStats((s) => ({ ...s, [l.id]: { ...s[l.id], sold: true } }))
+              setToast('Marked as sold. Nice!')
+            }}
+          />
+        )
+      }
+      case 'mymarket':
+        return <MyMarket listings={listings} mine={mine} stats={stats} saved={saved} back={back} onOpen={openListing} onSave={toggleSave} onSell={startSell} />
+      case 'sell':
+        return <Sell onPost={post} onCancel={back} />
+      case 'post':
+        return <PostDetail key={screen.id} p={POSTS.find((p) => p.id === screen.id)!} s={social} back={back} />
+      case 'club':
+        return <ClubPage clubId={screen.id} s={social} back={back} />
+      case 'thread': {
+        const t = threads.find((x) => x.id === screen.id)!
+        return (
+          <ThreadView
+            thread={t}
+            listing={listings.find((l) => l.id === t.listingId)!}
+            back={back}
+            onSend={(text) => sendText(t.id, text)}
+            onRespond={(i, a) => respond(t.id, i, a)}
+            onPickTime={(i, time) => pickTime(t.id, i, time)}
+            onOpenListing={() => push({ k: 'listing', id: t.listingId })}
+          />
+        )
+      }
+      default:
+        if (tab === 'home') return <Home s={social} />
+        if (tab === 'discover') return <Discover s={social} listings={listings} onOpenListing={openListing} onMarket={() => go(['market', [ROOT]])} />
+        if (tab === 'messages')
+          return (
+            <Inbox
+              threads={threads}
+              listings={listings}
+              onOpen={(id) => {
+                updateThread(id, (t) => ({ ...t, unread: false }))
+                push({ k: 'thread', id })
+              }}
+            />
+          )
+        if (tab === 'profile') return <Profile savedCount={saved.length} sellingCount={mine.length} bookmarks={bookmarks.length} onMyMarket={() => go(['market', [ROOT, { k: 'mymarket' }]])} />
+        return <MarketHome listings={listings} saved={saved} nav={marketNav} onCategory={(name) => push({ k: 'category', name })} onAllCategories={() => push({ k: 'allcats' })} onOpen={openListing} onSave={toggleSave} onSell={startSell} />
     }
   }
 
-  const listing = openListing ? listings.find((l) => l.id === openListing) : null
-  const thread = openThread ? threads.find((t) => t.id === openThread) : null
   const unread = threads.some((t) => t.unread)
-
-  const openThreadView = (id: string) => {
-    setOpenThread(id)
-    updateThread(id, (t) => ({ ...t, unread: false }))
-  }
+  const TABS: [Tab, Parameters<typeof Icon>[0]['name'], string][] = [
+    ['home', 'home', 'Home'],
+    ['discover', 'discover', 'Discover'],
+    ['market', 'cart', 'Marketplace'],
+    ['messages', 'send', 'Messages'],
+    ['profile', 'user', 'Profile'],
+  ]
 
   return (
     <div className={`page ${embed ? 'embed' : ''}`}>
       <aside className="side">
         <div className="brand">
           <div className="logo">
-            <Bubbles count={7} seed={2} />
-            <span>fizz</span>
+            <FizzMark size={40} />
           </div>
           <div>
             <h1>Fizz Marketplace</h1>
@@ -224,14 +347,22 @@ export default function App() {
           </div>
         </div>
         <p className="intro">
-          A research-led redesign of Fizz's campus marketplace, from task analysis and usability testing to a high-fidelity interface. Tap around the phone, or
-          jump to a design change below.
+          A research-led redesign of Fizz's campus marketplace, from task analysis and usability testing to a high-fidelity
+          interface. Built from our Figma screens, with the marketplace extended into a full buy-and-sell flow.
         </p>
 
-        <div className="changes">
-          <h2>Marketplace design changes</h2>
+        <section className="changes">
+          <h2>From our Figma</h2>
+          <div className="chips">
+            {FROM_FIGMA.map((c) => (
+              <button key={c.title} className="chip" onClick={() => go(c.go)}>
+                {c.title}
+              </button>
+            ))}
+          </div>
+          <h2>Added in this prototype</h2>
           <ol>
-            {CHANGES.map((c) => (
+            {ADDED.map((c) => (
               <li key={c.title}>
                 <button onClick={() => go(c.go)}>
                   <strong>{c.title}</strong>
@@ -240,13 +371,12 @@ export default function App() {
               </li>
             ))}
           </ol>
-        </div>
-
+        </section>
         <div className="other">
-          <span>Also in this prototype:</span>
-          <button onClick={() => go('feed')}>Feed</button>
-          <button onClick={() => (setOpenListing(null), setOpenThread(null), setTab('inbox'))}>Messages</button>
-          <button onClick={() => (setOpenListing(null), setOpenThread(null), setTab('me'))}>Profile</button>
+          <span>Rest of Fizz:</span>
+          <button onClick={() => go(['home', [ROOT]])}>Home feed</button>
+          <button onClick={() => go(['home', [ROOT, { k: 'post', id: 'curis' }]])}>Burst the bubble</button>
+          <button onClick={() => go(['discover', [ROOT]])}>Discover</button>
         </div>
       </aside>
 
@@ -256,84 +386,26 @@ export default function App() {
           <span className="notch" />
           <span>100%</span>
         </div>
-        <div className="viewport">
-          {tab === 'feed' && <Feed listings={listings} onOpenListing={setOpenListing} onMarket={() => go('browse')} />}
-          {tab === 'market' && (
-            <Market
-              listings={listings}
-              saved={saved}
-              toggleSave={toggleSave}
-              view={marketView}
-              setView={setMarketView}
-              mine={mine}
-              myStats={myStats}
-              onMarkSold={(id) => (setMyStats((s) => ({ ...s, [id]: { ...s[id], sold: true } })), setToast('Marked as sold. Nice!'))}
-              onOpen={setOpenListing}
-              onSell={() => setTab('sell')}
-            />
-          )}
-          {tab === 'sell' && <Sell onPost={post} onCancel={() => setTab('market')} />}
-          {tab === 'inbox' && <Inbox threads={threads} listings={listings} onOpen={openThreadView} />}
-          {tab === 'me' && <Profile savedCount={saved.length} listingCount={mine.length} onOpenSaved={() => go('saved')} />}
-
-          {thread && (
-            <ThreadView
-              thread={thread}
-              listing={listings.find((l) => l.id === thread.listingId)!}
-              onBack={() => setOpenThread(null)}
-              onSend={(text) => sendText(thread.id, text)}
-              onRespond={(i, a) => respond(thread.id, i, a)}
-              onPickTime={(i, t) => pickTime(thread.id, i, t)}
-              onOpenListing={() => setOpenListing(thread.listingId)}
-            />
-          )}
-
-          {listing && (
-            <ListingDetail
-              key={listing.id}
-              l={listing}
-              saved={saved.includes(listing.id)}
-              isMine={mine.includes(listing.id)}
-              onSave={() => toggleSave(listing.id)}
-              onBack={() => setOpenListing(null)}
-              onMessage={() => openChat(listing)}
-              onOffer={(a, n) => sendOffer(listing, a, n)}
-            />
-          )}
-
+        <div className="viewport" key={`${tab}-${stack.length}-${screen.k}`}>
+          {render()}
           {toast && (
             <div className="toast" role="status">
               {toast}
             </div>
           )}
         </div>
-
         <nav className="tabbar">
-          {(
-            [
-              ['feed', 'home', 'Feed'],
-              ['market', 'shop', 'Market'],
-              ['sell', 'plus', 'Sell'],
-              ['inbox', 'chat', 'Inbox'],
-              ['me', 'user', 'Me'],
-            ] as const
-          ).map(([t, icon, label]) => (
+          {TABS.map(([t, icon, label]) => (
             <button
               key={t}
-              className={`${tab === t ? 'on' : ''} ${t === 'sell' ? 'sell-tab' : ''}`}
-              onClick={() => {
-                setOpenListing(null)
-                setOpenThread(null)
-                setTab(t)
-              }}
+              className={tab === t ? 'on' : ''}
+              onClick={() => (tab === t ? setStacks((st) => ({ ...st, [t]: [ROOT] })) : setTab(t))}
               aria-label={label}
               aria-current={tab === t ? 'page' : undefined}
             >
-              <span className="tab-icon">
-                <Icon name={icon} size={t === 'sell' ? 24 : 22} />
-              </span>
-              {t !== 'sell' && <span>{label}</span>}
-              {t === 'inbox' && unread && <i className="tab-badge" />}
+              <Icon name={icon} size={24} />
+              <span>{label}</span>
+              {t === 'messages' && unread && <i className="tab-badge" />}
             </button>
           ))}
         </nav>
@@ -341,7 +413,7 @@ export default function App() {
 
       {!embed && (
         <footer className="credits">
-          Concept redesign by Pierre, Candace & Andrew (marketplace by Andrew). Not affiliated with Fizz; listings and people are made up.
+          Concept redesign by Pierre, Candace & Andrew (marketplace by Andrew). Not affiliated with Fizz; seller details, offers and messages are simulated.
         </footer>
       )}
     </div>

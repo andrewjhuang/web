@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { price, type Listing } from '../data'
+import { money, type Listing } from '../data'
 import { Icon, SellerAvatar, sellerOf, Verified } from './ui'
 
 export type Msg =
@@ -14,35 +14,41 @@ const QUICK = ['Is this still available?', 'Can you hold it until tomorrow?', 'C
 
 export function Inbox({ threads, listings, onOpen }: { threads: Thread[]; listings: Listing[]; onOpen: (id: string) => void }) {
   return (
-    <div className="screen inbox">
-      <header className="plain-head">
-        <h1>Messages</h1>
-      </header>
-      {threads.length === 0 && <p className="empty">No messages yet. Make an offer on something!</p>}
-      {threads.map((t) => {
-        const l = listings.find((x) => x.id === t.listingId)!
-        const s = sellerOf(t.seller)
-        const last = t.messages[t.messages.length - 1]
-        const preview =
-          last.kind === 'text'
-            ? last.text
-            : last.kind === 'offer'
-              ? `${last.from === 'me' ? 'You' : 'They'} offered ${price(last.amount)} · ${last.status}`
-              : `Meetup at ${last.spot}`
-        return (
-          <button key={t.id} className={`thread-row ${t.unread ? 'unread' : ''}`} onClick={() => onOpen(t.id)}>
-            <div className="thumb" style={{ background: l.bg }}>
-              {l.emoji}
-            </div>
-            <div className="thread-info">
-              <strong>{s === 'you' ? 'You' : s.handle}</strong>
-              <span className="muted">{l.title}</span>
-              <span className="preview">{preview}</span>
-            </div>
-            {t.unread && <i className="dot" />}
-          </button>
-        )
-      })}
+    <div className="screen glow">
+      <div className="scroll">
+        <header className="d-header">
+          <h2 className="h-title left">Messages</h2>
+        </header>
+        {threads.length === 0 && (
+          <div className="no-results">
+            <p className="nr-title">No messages yet</p>
+            <p className="muted">Message a seller or make an offer in Marketplace.</p>
+          </div>
+        )}
+        {threads.map((t) => {
+          const l = listings.find((x) => x.id === t.listingId)!
+          const s = sellerOf(t.seller)
+          const last = t.messages[t.messages.length - 1]
+          const preview = !last
+            ? 'Say hi 👋'
+            : last.kind === 'text'
+              ? last.text
+              : last.kind === 'offer'
+                ? `${last.from === 'me' ? 'You' : 'They'} offered ${money(last.amount)} · ${last.status}`
+                : `Meetup at ${last.spot}`
+          return (
+            <button key={t.id} className={`thread-row ${t.unread ? 'unread' : ''}`} onClick={() => onOpen(t.id)}>
+              <img src={l.photo} alt="" />
+              <span className="thread-info">
+                <strong>{s === 'you' ? 'You' : s.handle}</strong>
+                <span className="muted">{l.title}</span>
+                <span className="preview">{preview}</span>
+              </span>
+              {t.unread && <i className="dot" />}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -50,7 +56,7 @@ export function Inbox({ threads, listings, onOpen }: { threads: Thread[]; listin
 export function ThreadView({
   thread,
   listing,
-  onBack,
+  back,
   onSend,
   onRespond,
   onPickTime,
@@ -58,7 +64,7 @@ export function ThreadView({
 }: {
   thread: Thread
   listing: Listing
-  onBack: () => void
+  back: () => void
   onSend: (text: string) => void
   onRespond: (index: number, accept: boolean) => void
   onPickTime: (index: number, time: string) => void
@@ -80,31 +86,29 @@ export function ThreadView({
 
   return (
     <div className="screen thread">
-      <header className="thread-head">
-        <button className="icon-btn" onClick={onBack} aria-label="Back">
-          <Icon name="back" size={20} />
+      <header className="d-header thread-head">
+        <button className="back" onClick={back} aria-label="Back">
+          <Icon name="back" size={26} stroke={2.6} />
         </button>
         <SellerAvatar seller={s} size={34} />
-        <div>
+        <span className="th-who">
           <strong>
-            {s === 'you' ? 'You' : s.handle} {s !== 'you' && s.verified && <Verified />}
+            {s === 'you' ? 'You' : s.handle} <Verified size={12} />
           </strong>
-          {s !== 'you' && <span className="muted">replies {s.replies}</span>}
-        </div>
+          {s !== 'you' && <span className="muted small">replies {s.replies}</span>}
+        </span>
       </header>
       <button className="listing-pin" onClick={onOpenListing}>
-        <div className="thumb" style={{ background: listing.bg }}>
-          {listing.emoji}
-        </div>
+        <img src={listing.photo} alt="" />
         <span>{listing.title}</span>
-        <strong>{price(listing.price)}</strong>
+        <strong>{money(listing.price)}</strong>
       </button>
 
       <div className="messages" ref={list}>
         {thread.messages.map((m, i) => {
           if (m.kind === 'text') {
             return (
-              <div key={i} className={`bubble ${m.from}`}>
+              <div key={i} className={`msg ${m.from}`}>
                 {m.text}
               </div>
             )
@@ -113,7 +117,7 @@ export function ThreadView({
             return (
               <div key={i} className={`offer-card ${m.from} ${m.status}`}>
                 <span className="muted small">{m.from === 'me' ? 'Your offer' : 'Counter-offer'}</span>
-                <strong>{price(m.amount)}</strong>
+                <strong>{money(m.amount)}</strong>
                 <span className={`status ${m.status}`}>
                   {m.status === 'pending'
                     ? m.from === 'them'
@@ -127,11 +131,11 @@ export function ThreadView({
                 </span>
                 {m.from === 'them' && m.status === 'pending' && (
                   <div className="offer-actions">
-                    <button className="ghost small" onClick={() => onRespond(i, false)}>
+                    <button className="outline small" onClick={() => onRespond(i, false)}>
                       Decline
                     </button>
-                    <button className="primary small" onClick={() => onRespond(i, true)}>
-                      Accept {price(m.amount)}
+                    <button className="red-btn small" onClick={() => onRespond(i, true)}>
+                      Accept {money(m.amount)}
                     </button>
                   </div>
                 )}
@@ -148,9 +152,9 @@ export function ThreadView({
                 ) : (
                   <>
                     <span className="muted small">Pick a time that works:</span>
-                    <div className="chips">
+                    <div className="opt-row">
                       {TIMES.map((t) => (
-                        <button key={t} className="chip" onClick={() => onPickTime(i, t)}>
+                        <button key={t} className="opt small" onClick={() => onPickTime(i, t)}>
                           {t}
                         </button>
                       ))}
@@ -165,21 +169,21 @@ export function ThreadView({
 
       <div className="quick-replies">
         {QUICK.map((q) => (
-          <button key={q} className="chip" onClick={() => send(q)}>
+          <button key={q} className="opt small" onClick={() => send(q)}>
             {q}
           </button>
         ))}
       </div>
       <form
-        className="composer"
+        className="comment-bar"
         onSubmit={(e) => {
           e.preventDefault()
           send(text)
         }}
       >
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Message…" aria-label="Message" />
-        <button type="submit" className="send" aria-label="Send" disabled={!text.trim()}>
-          <Icon name="send" size={18} />
+        <button type="submit" aria-label="Send" disabled={!text.trim()}>
+          <Icon name="arrowUp" size={18} stroke={2.6} />
         </button>
       </form>
     </div>

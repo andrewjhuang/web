@@ -2,19 +2,21 @@
 
 A research-led redesign of Fizz's campus marketplace, from task analysis and usability testing to a high-fidelity interface. By Pierre, Candace & Andrew (marketplace by Andrew).
 
-The phone is fully clickable. The side panel lists each marketplace design change and jumps straight to it.
+Built from the team's Figma ("141 - fizz" page): the dark/red visual style, the Home / Discover / Marketplace / Messages / Profile tab bar, the listings and photos, the feed posts, and the "Burst the bubble, comment first" interaction all come from those screens. The side panel separates **From our Figma** from **Added in this prototype** and jumps to each screen.
 
-**Marketplace**
-- Browse by category, sort by newest / price / biggest deal, and filter by max price, condition, pickup spot and verified sellers. Search matches course codes with or without a space (`cs 106b`).
-- Listings show % below retail, price drops, and "New" badges. Save with ♡ (bubble burst) and see price-drop alerts under Saved.
-- Listing detail: photo carousel, seller trust signals (.edu verified, rating, sales, reply time), a safe public meetup spot, and a report link.
-- Structured offers: quick amounts (asking, −10%, −20%) or custom, with a note. The simulated seller accepts offers ≥ 85% of asking and counters lower ones; accept a counter and a meetup card lets you pick a time.
-- Sell in three steps: photo + title (category auto-suggested), details with a price guide from similar listings, then a preview before posting.
-- My listings: views tick up live, saves, and "Mark sold".
+**From the Figma, now interactive**
+- Marketplace home (Categories + Recent Listings), All Categories, search with recent searches, results with Filter by / Sort by sheets, and listing detail with Overview and Message Seller.
+- Home feed (Fizzin' / Following), post detail with "Burst the bubble, comment first", club pages with Follow, and Discover.
 
-**Rest of Fizz:** anonymous feed with up/down votes and a poll, a "Fresh on Marketplace" strip, messages, and a profile with notifications and alert settings.
+**Added to the marketplace**
+- Filters and sort that actually filter (Womens/Mens, condition, size, max price).
+- Make an offer: quick amounts or custom, sent as a card. The simulated seller accepts offers at 85%+ of asking and counters lower ones; accepting turns into a meetup card with time options.
+- Trust and safety on each listing: verified-student badge, rating, sales, reply time, a public meetup spot, share and report.
+- Save with ♡ (bubble burst) and price-drop alerts; My Marketplace with your listings (live views, Mark as sold) and saved items.
+- Empty states with "Notify me" and "Sell one", and live search suggestions.
+- A three-step Sell flow: upload or pick a photo, auto-suggested category, a price guide from similar listings, then a preview.
 
-Everything (listings, handles, posts) is made up; not affiliated with Fizz.
+Listing photos and post images are cropped from the Figma export. Seller handles, ratings, offers and messages are simulated; not affiliated with Fizz.
 
 ```bash
 npm install

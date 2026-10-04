@@ -1,288 +1,390 @@
 import { useState } from 'react'
-import { ago, CATEGORIES, MEETUPS, price, type Category, type Condition, type Listing } from '../data'
-import { Bubbles, Heart, Icon, isVerified, SellerAvatar, sellerOf, Sheet, Verified } from './ui'
+import { ago, CATEGORIES, money, type Audience, type Condition, type Listing } from '../data'
+import { Bubbles, Burst, Icon, SaveButton, SellerAvatar, sellerOf, Sheet, Verified } from './ui'
 
-export type MarketView = 'browse' | 'saved' | 'mine'
-export type MyStats = Record<string, { views: number; sold?: boolean }>
+type Nav = {
+  back?: () => void
+  onSearch: () => void
+  onMine: () => void
+}
 
-type Filters = { maxPrice: number; conditions: Condition[]; meetups: string[]; verifiedOnly: boolean }
-const NO_FILTERS: Filters = { maxPrice: 2000, conditions: [], meetups: [], verifiedOnly: false }
-
-const offPct = (l: Listing) => (l.retail && l.price > 0 ? Math.round((1 - l.price / l.retail) * 100) : null)
-
-export function Market({
-  listings,
-  saved,
-  toggleSave,
-  view,
-  setView,
-  mine,
-  myStats,
-  onMarkSold,
-  onOpen,
-  onSell,
-}: {
-  listings: Listing[]
-  saved: string[]
-  toggleSave: (id: string) => void
-  view: MarketView
-  setView: (v: MarketView) => void
-  mine: string[]
-  myStats: MyStats
-  onMarkSold: (id: string) => void
-  onOpen: (id: string) => void
-  onSell: () => void
-}) {
-  const [q, setQ] = useState('')
-  const [cat, setCat] = useState<Category | null>(null)
-  const [sort, setSort] = useState<'new' | 'low' | 'deal'>('new')
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS)
-  const [filterOpen, setFilterOpen] = useState(false)
-
-  const activeFilters = (filters.maxPrice < NO_FILTERS.maxPrice ? 1 : 0) + filters.conditions.length + filters.meetups.length + (filters.verifiedOnly ? 1 : 0)
-
-  const query = q.trim().toLowerCase()
-  const browse = listings
-    .filter((l) => !mine.includes(l.id))
-    .filter((l) => !cat || l.category === cat)
-    .filter((l) => {
-      if (!query) return true
-      // Match course codes typed with or without a space ("cs 106b" finds "cs106b").
-      const hay = [l.title, l.description, l.category, ...(l.tags ?? [])].join(' ').toLowerCase()
-      return hay.includes(query) || hay.includes(query.replace(/\s+/g, ''))
-    })
-    .filter((l) => l.price <= filters.maxPrice)
-    .filter((l) => !filters.conditions.length || filters.conditions.includes(l.condition))
-    .filter((l) => !filters.meetups.length || filters.meetups.includes(l.meetup))
-    .filter((l) => !filters.verifiedOnly || isVerified(l.seller))
-    .sort((a, b) => (sort === 'new' ? a.postedMin - b.postedMin : sort === 'low' ? a.price - b.price : (offPct(b) ?? -1) - (offPct(a) ?? -1)))
-
-  const savedListings = listings.filter((l) => saved.includes(l.id))
-  const drops = savedListings.filter((l) => l.dropFrom)
-  const myListings = listings.filter((l) => mine.includes(l.id))
-
+/** Search pill header from the mockups: back chevron, search, profile. */
+export function MarketHeader({ back, onSearch, onMine, query }: Nav & { query?: string }) {
   return (
-    <div className="screen split market">
-      <div className="scroll">
-        <header className="hero">
-          <Bubbles count={16} seed={3} />
-          <div className="hero-top">
-            <h1>Marketplace</h1>
-            <button className="sell-btn" onClick={onSell}>
-              <Icon name="plus" size={16} /> Sell
-            </button>
-          </div>
-          <label className="search">
-            <Icon name="search" size={18} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search textbooks, course codes, furniture…" aria-label="Search marketplace" />
-            {q && (
-              <button className="icon-btn" onClick={() => setQ('')} aria-label="Clear search">
-                <Icon name="x" size={16} />
-              </button>
-            )}
-          </label>
-          <div className="seg" role="tablist">
-            {(
-              [
-                ['browse', 'Browse'],
-                ['saved', `Saved${saved.length ? ` · ${saved.length}` : ''}`],
-                ['mine', `My listings${mine.length ? ` · ${mine.length}` : ''}`],
-              ] as const
-            ).map(([v, label]) => (
-              <button key={v} role="tab" aria-selected={view === v} className={view === v ? 'on' : ''} onClick={() => setView(v)}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </header>
-
-        {view === 'browse' && (
-          <>
-            <div className="cats" role="list">
-              <button className={`cat ${!cat ? 'on' : ''}`} onClick={() => setCat(null)}>
-                <span>✨</span>All
-              </button>
-              {CATEGORIES.map((c) => (
-                <button key={c.name} className={`cat ${cat === c.name ? 'on' : ''}`} onClick={() => setCat(cat === c.name ? null : c.name)}>
-                  <span>{c.emoji}</span>
-                  {c.name}
-                </button>
-              ))}
-            </div>
-            <div className="toolbar">
-              <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort">
-                <option value="new">Newest</option>
-                <option value="low">Price: low to high</option>
-                <option value="deal">Biggest deal</option>
-              </select>
-              <button className={`filter-btn ${activeFilters ? 'on' : ''}`} onClick={() => setFilterOpen(true)}>
-                <Icon name="filter" size={16} /> Filters{activeFilters ? ` · ${activeFilters}` : ''}
-              </button>
-            </div>
-            {browse.length === 0 ? (
-              <div className="empty">
-                <p>Nothing matches yet.</p>
-                <button className="link" onClick={() => (setQ(''), setCat(null), setFilters(NO_FILTERS))}>
-                  Clear search and filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid">
-                {browse.map((l) => (
-                  <Card key={l.id} l={l} saved={saved.includes(l.id)} onSave={() => toggleSave(l.id)} onOpen={() => onOpen(l.id)} />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {view === 'saved' && (
-          <>
-            {drops.length > 0 && (
-              <div className="drop-banner">
-                💸{' '}
-                <b>
-                  {drops.length} price drop{drops.length > 1 ? 's' : ''}
-                </b>{' '}
-                on items you saved
-              </div>
-            )}
-            {savedListings.length === 0 ? (
-              <div className="empty">
-                <p>Tap ♡ on anything to save it. We'll tell you if the price drops.</p>
-              </div>
-            ) : (
-              <div className="grid">
-                {savedListings.map((l) => (
-                  <Card key={l.id} l={l} saved onSave={() => toggleSave(l.id)} onOpen={() => onOpen(l.id)} />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {view === 'mine' && (
-          <div className="mine">
-            {myListings.length === 0 ? (
-              <div className="empty">
-                <p>You haven't listed anything yet.</p>
-                <button className="primary small" onClick={onSell}>
-                  List an item
-                </button>
-              </div>
-            ) : (
-              myListings.map((l) => {
-                const st = myStats[l.id] ?? { views: 0 }
-                return (
-                  <div key={l.id} className={`mine-row ${st.sold ? 'sold' : ''}`}>
-                    <div className="thumb" style={{ background: l.bg }} onClick={() => onOpen(l.id)}>
-                      {l.emoji}
-                    </div>
-                    <div className="mine-info">
-                      <strong>{l.title}</strong>
-                      <span>
-                        {price(l.price)} · {st.sold ? 'Sold' : 'Active'}
-                      </span>
-                      <span className="muted">
-                        👀 {st.views} view{st.views === 1 ? '' : 's'} · ♡ {l.saves} save{l.saves === 1 ? '' : 's'}
-                      </span>
-                    </div>
-                    {!st.sold && (
-                      <button className="ghost small" onClick={() => onMarkSold(l.id)}>
-                        Mark sold
-                      </button>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-        )}
-      </div>
-
-      {filterOpen && <FilterSheet value={filters} onChange={setFilters} onClose={() => setFilterOpen(false)} count={browse.length} />}
-    </div>
+    <header className="m-header">
+      {back && (
+        <button className="back" onClick={back} aria-label="Back">
+          <Icon name="back" size={26} stroke={2.6} />
+        </button>
+      )}
+      <button className="search-pill" onClick={onSearch}>
+        <Icon name="search" size={18} />
+        <span className={query ? '' : 'ph'}>{query || 'Search'}</span>
+      </button>
+      <button className="icon-btn" onClick={onMine} aria-label="My marketplace">
+        <Icon name="user" size={24} />
+      </button>
+    </header>
   )
 }
 
-function Card({ l, saved, onSave, onOpen }: { l: Listing; saved: boolean; onSave: () => void; onOpen: () => void }) {
-  const off = offPct(l)
+export function ListingCard({ l, saved, onOpen, onSave }: { l: Listing; saved: boolean; onOpen: () => void; onSave: () => void }) {
   return (
-    <article className="card" onClick={onOpen} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onOpen()}>
-      <div className="tile" style={{ background: l.bg }}>
-        <span className="tile-emoji">{l.emoji}</span>
-        {l.dropFrom && <span className="badge drop">Price drop</span>}
-        {!l.dropFrom && l.postedMin < 30 && <span className="badge new">New</span>}
-        <Heart on={saved} onToggle={onSave} label={saved ? `Unsave ${l.title}` : `Save ${l.title}`} />
+    <article className="l-card" role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => e.key === 'Enter' && onOpen()}>
+      <div className="l-photo">
+        <img src={l.photo} alt="" loading="lazy" />
+        {l.wasPrice && <span className="l-badge">Price drop</span>}
+        {!l.wasPrice && l.postedMin < 60 && <span className="l-badge new">New</span>}
+        <SaveButton on={saved} onToggle={onSave} label={saved ? `Unsave ${l.title}` : `Save ${l.title}`} />
       </div>
-      <div className="card-body">
-        <div className="price-row">
-          <strong className={l.price === 0 ? 'free' : ''}>{price(l.price)}</strong>
-          {l.dropFrom && <s>{price(l.dropFrom)}</s>}
-          {!l.dropFrom && off !== null && off >= 40 && <span className="off">-{off}%</span>}
-        </div>
-        <p className="title">{l.title}</p>
-        <p className="meta">
-          <Icon name="pin" size={12} /> {l.meetup} · {ago(l.postedMin)}
-        </p>
+      <div className="l-info">
+        <span className="l-price">
+          {money(l.price)}
+          {l.wasPrice && <s>{money(l.wasPrice)}</s>}
+        </span>
+        <span className="l-title">{l.title}</span>
       </div>
     </article>
   )
 }
 
-function FilterSheet({ value, onChange, onClose, count }: { value: Filters; onChange: (f: Filters) => void; onClose: () => void; count: number }) {
+function Grid({ items, saved, onOpen, onSave }: { items: Listing[]; saved: string[]; onOpen: (id: string) => void; onSave: (id: string) => void }) {
+  return (
+    <div className="l-grid">
+      {items.map((l) => (
+        <ListingCard key={l.id} l={l} saved={saved.includes(l.id)} onOpen={() => onOpen(l.id)} onSave={() => onSave(l.id)} />
+      ))}
+    </div>
+  )
+}
+
+/* ---------------- Home ---------------- */
+
+export function MarketHome({
+  listings,
+  saved,
+  nav,
+  onCategory,
+  onAllCategories,
+  onOpen,
+  onSave,
+  onSell,
+}: {
+  listings: Listing[]
+  saved: string[]
+  nav: Nav
+  onCategory: (c: string) => void
+  onAllCategories: () => void
+  onOpen: (id: string) => void
+  onSave: (id: string) => void
+  onSell: () => void
+}) {
+  const recent = [...listings].sort((a, b) => a.postedMin - b.postedMin)
+  const drops = listings.filter((l) => saved.includes(l.id) && l.wasPrice)
+  return (
+    <div className="screen">
+      <Bubbles count={9} seed={4} />
+      <div className="scroll">
+        <MarketHeader {...nav} />
+        {drops.length > 0 && (
+          <button className="alert-row" onClick={nav.onMine}>
+            <span>💸</span>
+            <span>
+              <b>Price drop</b> on {drops[0].title}
+              {drops.length > 1 ? ` and ${drops.length - 1} more you saved` : ', which you saved'}
+            </span>
+            <Icon name="back" size={16} />
+          </button>
+        )}
+        <div className="sec-head">
+          <h2>Categories</h2>
+          <button className="see-all" onClick={onAllCategories}>
+            See All
+          </button>
+        </div>
+        <CategoryGrid cats={CATEGORIES.slice(0, 8)} onCategory={onCategory} />
+        <div className="divider" />
+        <div className="sec-head">
+          <h2>Recent Listings</h2>
+        </div>
+        <Grid items={recent} saved={saved} onOpen={onOpen} onSave={onSave} />
+      </div>
+      <button className="fab" onClick={onSell} aria-label="Sell an item">
+        <Icon name="plus" size={20} stroke={2.6} /> Sell
+      </button>
+    </div>
+  )
+}
+
+function CategoryGrid({ cats, onCategory }: { cats: typeof CATEGORIES; onCategory: (c: string) => void }) {
+  return (
+    <div className="cat-grid">
+      {cats.map((c) => (
+        <button key={c.name} className="cat" onClick={() => onCategory(c.name)}>
+          <span className="cat-tile">{c.emoji}</span>
+          {c.name}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function AllCategories({ nav, onCategory }: { nav: Nav; onCategory: (c: string) => void }) {
+  return (
+    <div className="screen">
+      <div className="scroll">
+        <MarketHeader {...nav} />
+        <div className="sec-head">
+          <h2>All Categories</h2>
+        </div>
+        <CategoryGrid cats={CATEGORIES} onCategory={onCategory} />
+      </div>
+    </div>
+  )
+}
+
+/* ---------------- Search ---------------- */
+
+export function SearchScreen({
+  listings,
+  recents,
+  setRecents,
+  initial,
+  onSubmit,
+  onCancel,
+}: {
+  listings: Listing[]
+  recents: string[]
+  setRecents: (r: string[]) => void
+  initial: string
+  onSubmit: (q: string) => void
+  onCancel: () => void
+}) {
+  const [q, setQ] = useState(initial)
+  const t = q.trim().toLowerCase()
+  const suggestions = t ? listings.filter((l) => l.title.toLowerCase().includes(t) || l.categories.some((c) => c.toLowerCase().includes(t))).slice(0, 5) : []
+  const submit = (v: string) => {
+    const s = v.trim()
+    if (!s) return
+    setRecents([s, ...recents.filter((r) => r.toLowerCase() !== s.toLowerCase())].slice(0, 8))
+    onSubmit(s)
+  }
+  return (
+    <div className="screen">
+      <div className="scroll">
+        <form
+          className="m-header"
+          onSubmit={(e) => {
+            e.preventDefault()
+            submit(q)
+          }}
+        >
+          <label className="search-pill input">
+            <Icon name="search" size={18} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label="Search marketplace" />
+          </label>
+          <button type="button" className="cancel" onClick={onCancel}>
+            Cancel
+          </button>
+        </form>
+        {suggestions.length > 0 && (
+          <div className="suggest-list">
+            {suggestions.map((l) => (
+              <button key={l.id} onClick={() => submit(l.title)}>
+                <img src={l.photo} alt="" />
+                <span>{l.title}</span>
+                <em>{money(l.price)}</em>
+              </button>
+            ))}
+          </div>
+        )}
+        {recents.length > 0 && (
+          <div className="recents">
+            <h3>Recent</h3>
+            {recents.map((r) => (
+              <div key={r} className="recent-row">
+                <button onClick={() => submit(r)}>{r}</button>
+                <button className="icon-btn" onClick={() => setRecents(recents.filter((x) => x !== r))} aria-label={`Remove ${r}`}>
+                  <Icon name="x" size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ---------------- Results (category or search) ---------------- */
+
+type Filters = { conditions: Condition[]; sizes: string[]; audience: Audience[]; maxPrice: number }
+const NO_FILTERS: Filters = { conditions: [], sizes: [], audience: [], maxPrice: 500 }
+type Sort = 'relevance' | 'new' | 'low' | 'high'
+const SORTS: [Sort, string][] = [
+  ['relevance', 'Relevance'],
+  ['new', 'Newly listed'],
+  ['low', 'Price: low to high'],
+  ['high', 'Price: high to low'],
+]
+
+export function Results({
+  title,
+  query,
+  base,
+  saved,
+  nav,
+  alerts,
+  onToggleAlert,
+  onOpen,
+  onSave,
+  onSell,
+}: {
+  title: string
+  query?: string
+  base: Listing[]
+  saved: string[]
+  nav: Nav
+  alerts: string[]
+  onToggleAlert: (key: string) => void
+  onOpen: (id: string) => void
+  onSave: (id: string) => void
+  onSell: () => void
+}) {
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS)
+  const [sort, setSort] = useState<Sort>('relevance')
+  const [sheet, setSheet] = useState<'filter' | 'sort' | null>(null)
+  const [k, setK] = useState(0)
+
+  const items = base
+    .filter((l) => !filters.conditions.length || filters.conditions.includes(l.condition))
+    .filter((l) => !filters.sizes.length || filters.sizes.includes(l.size))
+    .filter((l) => !filters.audience.length || (l.audience && filters.audience.includes(l.audience)))
+    .filter((l) => filters.maxPrice >= 500 || l.price <= filters.maxPrice)
+    .sort((a, b) => (sort === 'new' ? a.postedMin - b.postedMin : sort === 'low' ? a.price - b.price : sort === 'high' ? b.price - a.price : 0))
+
+  const active = filters.conditions.length + filters.sizes.length + filters.audience.length + (filters.maxPrice < 500 ? 1 : 0)
+  const alertKey = query ? `q:${query}` : `c:${title}`
+  const alertOn = alerts.includes(alertKey)
+  const sizes = [...new Set(base.map((l) => l.size).filter((s) => s !== 'n/a'))]
+
+  return (
+    <div className="screen">
+      <div className="scroll">
+        <MarketHeader {...nav} query={query} />
+        <div className="tools">
+          <button className={`tool ${active ? 'on' : ''}`} onClick={() => setSheet('filter')}>
+            <Icon name="filter" size={16} /> Filter{active ? ` · ${active}` : ''}
+          </button>
+          <button className={`tool ${sort !== 'relevance' ? 'on' : ''}`} onClick={() => setSheet('sort')}>
+            <Icon name="sort" size={16} /> {sort === 'relevance' ? 'Sort' : SORTS.find((s) => s[0] === sort)![1]}
+          </button>
+        </div>
+        <h2 className="results-title">{query ? `“${query}”` : title}</h2>
+        {items.length ? (
+          <Grid items={items} saved={saved} onOpen={onOpen} onSave={onSave} />
+        ) : (
+          <div className="no-results">
+            <p className="nr-title">No results found</p>
+            {active > 0 ? (
+              <button className="outline" onClick={() => setFilters(NO_FILTERS)}>
+                Clear filters
+              </button>
+            ) : (
+              <>
+                <p className="muted">Nobody's selling {query ? `“${query}”` : title.toLowerCase()} right now.</p>
+                <div className="nr-actions">
+                  <button
+                    className={`outline ${alertOn ? 'on' : ''}`}
+                    onClick={() => {
+                      if (!alertOn) setK((x) => x + 1)
+                      onToggleAlert(alertKey)
+                    }}
+                  >
+                    <Icon name="bell" size={16} /> {alertOn ? "We'll notify you" : 'Notify me'}
+                    <Burst k={k} />
+                  </button>
+                  <button className="red-btn small" onClick={onSell}>
+                    Sell one
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {sheet === 'filter' && (
+        <Sheet title="Filter by" icon="filter" onClose={() => setSheet(null)}>
+          <FilterBody value={filters} onChange={setFilters} sizes={sizes} />
+          <div className="sheet-foot">
+            <button className="link" onClick={() => setFilters(NO_FILTERS)}>
+              Reset
+            </button>
+            <button className="red-btn" onClick={() => setSheet(null)}>
+              Show {items.length} result{items.length === 1 ? '' : 's'}
+            </button>
+          </div>
+        </Sheet>
+      )}
+      {sheet === 'sort' && (
+        <Sheet title="Sort by" icon="sort" onClose={() => setSheet(null)}>
+          <div className="opt-grid">
+            {SORTS.map(([v, label]) => (
+              <button
+                key={v}
+                className={`opt ${sort === v ? 'on' : ''}`}
+                onClick={() => {
+                  setSort(v)
+                  setSheet(null)
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </Sheet>
+      )}
+    </div>
+  )
+}
+
+function FilterBody({ value, onChange, sizes }: { value: Filters; onChange: (f: Filters) => void; sizes: string[] }) {
   const toggle = <T,>(list: T[], x: T) => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x])
   return (
-    <Sheet title="Filters" onClose={onClose}>
-      <div className="field">
-        <label>
-          Max price <b>{value.maxPrice >= 2000 ? 'Any' : `$${value.maxPrice}`}</b>
-        </label>
-        <input type="range" min={0} max={2000} step={10} value={value.maxPrice} onChange={(e) => onChange({ ...value, maxPrice: Number(e.target.value) })} />
+    <>
+      <div className="opt-grid">
+        {(['Womens', 'Mens'] as Audience[]).map((a) => (
+          <button key={a} className={`opt ${value.audience.includes(a) ? 'on' : ''}`} onClick={() => onChange({ ...value, audience: toggle(value.audience, a) })}>
+            {a}
+          </button>
+        ))}
       </div>
-      <div className="field">
-        <label>Condition</label>
-        <div className="chips">
-          {(['New', 'Like new', 'Good', 'Fair'] as Condition[]).map((c) => (
-            <button
-              key={c}
-              className={`chip ${value.conditions.includes(c) ? 'on' : ''}`}
-              onClick={() => onChange({ ...value, conditions: toggle(value.conditions, c) })}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+      <h4 className="opt-label">Condition</h4>
+      <div className="opt-grid">
+        {(['New', 'Used'] as Condition[]).map((c) => (
+          <button key={c} className={`opt ${value.conditions.includes(c) ? 'on' : ''}`} onClick={() => onChange({ ...value, conditions: toggle(value.conditions, c) })}>
+            {c}
+          </button>
+        ))}
       </div>
-      <div className="field">
-        <label>Pickup spot</label>
-        <div className="chips">
-          {MEETUPS.map((m) => (
-            <button
-              key={m}
-              className={`chip ${value.meetups.includes(m) ? 'on' : ''}`}
-              onClick={() => onChange({ ...value, meetups: toggle(value.meetups, m) })}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-      </div>
-      <label className="switch-row">
-        <span>
-          <Verified /> Verified students only
-        </span>
-        <input type="checkbox" checked={value.verifiedOnly} onChange={(e) => onChange({ ...value, verifiedOnly: e.target.checked })} />
-      </label>
-      <div className="sheet-actions">
-        <button className="link" onClick={() => onChange(NO_FILTERS)}>
-          Reset
-        </button>
-        <button className="primary" onClick={onClose}>
-          Show {count} item{count === 1 ? '' : 's'}
-        </button>
-      </div>
-    </Sheet>
+      {sizes.length > 0 && (
+        <>
+          <h4 className="opt-label">Size</h4>
+          <div className="opt-row">
+            {sizes.map((s) => (
+              <button key={s} className={`opt small ${value.sizes.includes(s) ? 'on' : ''}`} onClick={() => onChange({ ...value, sizes: toggle(value.sizes, s) })}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <h4 className="opt-label">
+        Max price <b>{value.maxPrice >= 500 ? 'Any' : `$${value.maxPrice}`}</b>
+      </h4>
+      <input type="range" min={5} max={500} step={5} value={value.maxPrice} onChange={(e) => onChange({ ...value, maxPrice: Number(e.target.value) })} aria-label="Max price" />
+    </>
   )
 }
 
@@ -292,125 +394,164 @@ export function ListingDetail({
   l,
   saved,
   isMine,
+  sold,
+  back,
   onSave,
-  onBack,
   onMessage,
   onOffer,
+  onMarkSold,
 }: {
   l: Listing
   saved: boolean
   isMine: boolean
+  sold: boolean
+  back: () => void
   onSave: () => void
-  onBack: () => void
   onMessage: () => void
   onOffer: (amount: number, note: string) => void
+  onMarkSold: () => void
 }) {
-  const [photo, setPhoto] = useState(0)
-  const [offerOpen, setOfferOpen] = useState(false)
-  const [reported, setReported] = useState(false)
+  const [menu, setMenu] = useState(false)
+  const [offer, setOffer] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const s = sellerOf(l.seller)
-  const off = offPct(l)
-  const photos = [0, -12, 10]
 
   return (
-    <div className="screen split detail">
+    <div className="screen detail">
       <div className="scroll">
-        <div className="gallery" style={{ background: l.bg }}>
-          <Bubbles count={8} seed={l.id.length} />
-          <span className="gallery-emoji" key={photo} style={{ transform: `rotate(${photos[photo]}deg)` }}>
-            {l.emoji}
-          </span>
-          <button className="round back" onClick={onBack} aria-label="Back">
-            <Icon name="back" size={20} />
+        <header className="d-header">
+          <button className="back" onClick={back} aria-label="Back">
+            <Icon name="back" size={26} stroke={2.6} />
           </button>
-          <div className="gallery-actions">
-            <button className="round" aria-label="Share" onClick={() => navigator.clipboard?.writeText(`fizz.social/m/${l.id}`).catch(() => {})}>
-              <Icon name="share" size={18} />
+          <div className="d-actions">
+            {!isMine && <SaveButton on={saved} onToggle={onSave} label={saved ? 'Unsave' : 'Save'} className="flat" />}
+            <button className="icon-btn" onClick={() => setMenu(true)} aria-label="More options">
+              <Icon name="more" size={24} />
             </button>
-            {!isMine && <Heart on={saved} onToggle={onSave} label={saved ? 'Unsave' : 'Save'} />}
           </div>
-          <div className="dots">
-            {photos.map((_, i) => (
-              <button key={i} className={i === photo ? 'on' : ''} onClick={() => setPhoto(i)} aria-label={`Photo ${i + 1}`} />
-            ))}
-          </div>
+        </header>
+        <div className="d-photo">
+          <img src={l.photo} alt={l.title} />
+          {sold && <span className="sold-stamp">SOLD</span>}
         </div>
-
-        <div className="detail-body">
-          <div className="price-row big">
-            <strong className={l.price === 0 ? 'free' : ''}>{price(l.price)}</strong>
-            {l.category === 'Sublets' && <span className="muted">/ month</span>}
-            {l.dropFrom && <s>{price(l.dropFrom)}</s>}
-            {off !== null && <span className="off">{off}% below retail</span>}
+        <div className="d-body">
+          <div className="d-price">
+            {money(l.price)}
+            {l.wasPrice && (
+              <span className="drop">
+                <s>{money(l.wasPrice)}</s> Price drop
+              </span>
+            )}
           </div>
-          <h2>{l.title}</h2>
-          <div className="chips">
-            <span className="chip static">{l.condition}</span>
-            <span className="chip static">{l.category}</span>
-            <span className="chip static">Posted {ago(l.postedMin)} ago</span>
-            <span className="chip static">♡ {l.saves + (saved ? 1 : 0)}</span>
-          </div>
+          <h1 className="d-title">{l.title}</h1>
+          <p className="d-posted">Posted {ago(l.postedMin, true)}</p>
 
-          <div className="seller">
-            <SellerAvatar seller={s} size={44} />
-            <div>
-              <strong>
-                {s === 'you' ? 'You' : s.handle} {s !== 'you' && s.verified && <Verified />}
-              </strong>
-              {s !== 'you' && (
-                <span className="muted">
+          {isMine ? (
+            <button className="red-btn full" disabled={sold} onClick={onMarkSold}>
+              {sold ? 'Sold' : 'Mark as sold'}
+            </button>
+          ) : (
+            <div className="d-cta">
+              <button className="red-btn" onClick={onMessage}>
+                Message Seller
+              </button>
+              <button className="outline" onClick={() => setOffer(true)}>
+                Make offer
+              </button>
+            </div>
+          )}
+
+          {s !== 'you' && (
+            <div className="seller-row">
+              <SellerAvatar seller={s} size={40} />
+              <div>
+                <strong>
+                  {s.handle} <Verified />
+                </strong>
+                <span>
                   ★ {s.rating.toFixed(1)} · {s.sales} sales · replies {s.replies}
                 </span>
-              )}
+              </div>
             </div>
-          </div>
+          )}
 
-          <p className="desc">{l.description}</p>
+          <div className="rule" />
+          <h3 className="d-h">Overview</h3>
+          <dl className="overview">
+            <dt>Condition</dt>
+            <dd>{l.condition}</dd>
+            <dt>Category</dt>
+            <dd>{l.categories.join(', ')}</dd>
+            <dt>Size</dt>
+            <dd>{l.size}</dd>
+          </dl>
+          <div className="rule" />
+          <h3 className="d-h light">Description</h3>
+          <p className="d-desc">{l.description}</p>
 
-          <div className="safe">
+          <div className="meetup">
             <Icon name="shield" size={20} />
             <div>
               <strong>Meet at {l.meetup}</strong>
-              <span>Public campus spots only. Never share your dorm room. Pay on pickup.</span>
+              <span>Public campus spots only. Never share your dorm room, and pay on pickup.</span>
             </div>
           </div>
-
-          {!isMine && (
-            <button className="link report" onClick={() => setReported(true)} disabled={reported}>
-              {reported ? 'Thanks, our team will review this listing' : 'Report listing'}
-            </button>
-          )}
+          {notice && <p className="notice">{notice}</p>}
         </div>
       </div>
 
-      {!isMine && (
-        <div className="action-bar">
-          <button className="ghost" onClick={onMessage}>
-            <Icon name="chat" size={18} /> Message
-          </button>
-          <button className="primary" onClick={() => (l.price === 0 ? onOffer(0, "I'd love to grab this!") : setOfferOpen(true))}>
-            {l.price === 0 ? 'Request it' : 'Make offer'}
-          </button>
-        </div>
+      {menu && (
+        <Sheet title={l.title} onClose={() => setMenu(false)}>
+          <div className="menu">
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(`fizz.social/marketplace/${l.id}`).catch(() => {})
+                setNotice('Link copied')
+                setMenu(false)
+              }}
+            >
+              <Icon name="share" size={20} /> Share listing
+            </button>
+            {!isMine && (
+              <button
+                className="danger"
+                onClick={() => {
+                  setNotice('Thanks for reporting. Our team will review this listing.')
+                  setMenu(false)
+                }}
+              >
+                <Icon name="shield" size={20} /> Report listing
+              </button>
+            )}
+          </div>
+        </Sheet>
       )}
-
-      {offerOpen && <OfferSheet l={l} onClose={() => setOfferOpen(false)} onSend={(a, n) => (setOfferOpen(false), onOffer(a, n))} />}
+      {offer && (
+        <OfferSheet
+          l={l}
+          onClose={() => setOffer(false)}
+          onSend={(a, n) => {
+            setOffer(false)
+            onOffer(a, n)
+          }}
+        />
+      )}
     </div>
   )
 }
 
 function OfferSheet({ l, onClose, onSend }: { l: Listing; onClose: () => void; onSend: (amount: number, note: string) => void }) {
-  const quick = [1, 0.9, 0.8].map((k) => Math.round(l.price * k))
+  const quick = [1, 0.9, 0.8].map((k) => Math.max(1, Math.round(l.price * k)))
   const [amount, setAmount] = useState(quick[1])
   const [note, setNote] = useState(`Hi! Could you do $${quick[1]}? I can meet at ${l.meetup}.`)
   return (
     <Sheet title="Make an offer" onClose={onClose}>
-      <p className="muted small">Asking {price(l.price)}. Offers go straight to the seller as a card they can accept or counter.</p>
-      <div className="quick">
+      <p className="muted center">Asking {money(l.price)}. The seller gets a card they can accept or counter.</p>
+      <div className="opt-grid three">
         {quick.map((q, i) => (
           <button
-            key={q}
-            className={`chip ${amount === q ? 'on' : ''}`}
+            key={i}
+            className={`opt ${amount === q ? 'on' : ''}`}
             onClick={() => {
               setAmount(q)
               setNote(i === 0 ? `I'll take it at $${q}! I can meet at ${l.meetup}.` : `Hi! Could you do $${q}? I can meet at ${l.meetup}.`)
@@ -421,20 +562,101 @@ function OfferSheet({ l, onClose, onSend }: { l: Listing; onClose: () => void; o
           </button>
         ))}
       </div>
-      <div className="field">
-        <label htmlFor="amt">Your offer</label>
-        <div className="amount">
-          <span>$</span>
-          <input id="amt" type="number" min={1} value={amount} onChange={(e) => setAmount(Math.max(0, Number(e.target.value)))} />
-        </div>
-      </div>
-      <div className="field">
-        <label htmlFor="note">Note</label>
-        <textarea id="note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-      </div>
-      <button className="primary full" disabled={amount <= 0} onClick={() => onSend(amount, note)}>
+      <label className="amount">
+        <span>$</span>
+        <input type="number" min={1} value={amount} onChange={(e) => setAmount(Math.max(0, Number(e.target.value)))} aria-label="Offer amount" />
+      </label>
+      <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)} aria-label="Note to seller" />
+      <button className="red-btn full" disabled={amount <= 0} onClick={() => onSend(amount, note)}>
         Send ${amount} offer
       </button>
     </Sheet>
+  )
+}
+
+/* ---------------- My marketplace ---------------- */
+
+export type MyStats = Record<string, { views: number; sold?: boolean }>
+
+export function MyMarket({
+  listings,
+  mine,
+  stats,
+  saved,
+  back,
+  onOpen,
+  onSave,
+  onSell,
+}: {
+  listings: Listing[]
+  mine: string[]
+  stats: MyStats
+  saved: string[]
+  back: () => void
+  onOpen: (id: string) => void
+  onSave: (id: string) => void
+  onSell: () => void
+}) {
+  const [tab, setTab] = useState<'selling' | 'saved'>(mine.length ? 'selling' : 'saved')
+  const selling = listings.filter((l) => mine.includes(l.id))
+  const savedItems = listings.filter((l) => saved.includes(l.id))
+  return (
+    <div className="screen">
+      <div className="scroll">
+        <header className="d-header">
+          <button className="back" onClick={back} aria-label="Back">
+            <Icon name="back" size={26} stroke={2.6} />
+          </button>
+          <h2 className="h-title">My Marketplace</h2>
+          <span style={{ width: 34 }} />
+        </header>
+        <div className="tabs">
+          <button className={tab === 'selling' ? 'on' : ''} onClick={() => setTab('selling')}>
+            Selling{selling.length ? ` · ${selling.length}` : ''}
+          </button>
+          <button className={tab === 'saved' ? 'on' : ''} onClick={() => setTab('saved')}>
+            Saved{savedItems.length ? ` · ${savedItems.length}` : ''}
+          </button>
+        </div>
+        {tab === 'selling' &&
+          (selling.length ? (
+            <div className="mine-list">
+              {selling.map((l) => {
+                const st = stats[l.id] ?? { views: 0 }
+                return (
+                  <button key={l.id} className={`mine-row ${st.sold ? 'sold' : ''}`} onClick={() => onOpen(l.id)}>
+                    <img src={l.photo} alt="" />
+                    <span className="mine-info">
+                      <strong>{l.title}</strong>
+                      <span>
+                        {money(l.price)} · {st.sold ? 'Sold' : 'Active'}
+                      </span>
+                      <span className="muted">
+                        👀 {st.views} view{st.views === 1 ? '' : 's'} · ♡ {l.saves} save{l.saves === 1 ? '' : 's'}
+                      </span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="no-results">
+              <p className="nr-title">You're not selling anything yet</p>
+              <button className="red-btn small" onClick={onSell}>
+                List an item
+              </button>
+            </div>
+          ))}
+        {tab === 'saved' &&
+          (savedItems.length ? (
+            <Grid items={savedItems} saved={saved} onOpen={onOpen} onSave={onSave} />
+          ) : (
+            <div className="no-results">
+              <p className="nr-title">Nothing saved yet</p>
+              <p className="muted">Tap ♡ on a listing and we'll tell you if the price drops.</p>
+            </div>
+          ))}
+      </div>
+    </div>
   )
 }

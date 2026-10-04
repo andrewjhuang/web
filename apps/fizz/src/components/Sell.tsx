@@ -1,112 +1,103 @@
 import { useState } from 'react'
-import { CATEGORIES, MEETUPS, price, priceGuide, type Category, type Condition, type Listing } from '../data'
-import { Bubbles, Icon } from './ui'
+import { CATEGORIES, MEETUPS, money, priceGuide, type Condition, type Listing } from '../data'
+import { Icon } from './ui'
 
-const PHOTOS = [
-  { emoji: '📕', bg: 'linear-gradient(135deg,#fecaca,#f87171)' },
-  { emoji: '🪑', bg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
-  { emoji: '🎮', bg: 'linear-gradient(135deg,#c7d2fe,#818cf8)' },
-  { emoji: '👟', bg: 'linear-gradient(135deg,#bbf7d0,#4ade80)' },
-  { emoji: '🚲', bg: 'linear-gradient(135deg,#bae6fd,#38bdf8)' },
-  { emoji: '🪴', bg: 'linear-gradient(135deg,#d9f99d,#a3e635)' },
+const SAMPLE_PHOTOS = ['/listings/headphones.jpg', '/listings/lavalamp.jpg', '/listings/table.jpg']
+
+const KEYWORDS: [RegExp, string][] = [
+  [/book|reader|textbook|cs ?\d|econ|math|chem|bio/i, 'Textbooks'],
+  [/phone|laptop|ipad|airpods|monitor|switch|controller|camera|headphone|charger|lamp|speaker/i, 'Electronics'],
+  [/bike|scooter|skateboard|car\b/i, 'Vehicles'],
+  [/chair|desk|couch|futon|table|shelf|bed|rug|fridge/i, 'Furniture'],
+  [/glass|plate|mug|pan|pot|jar|bowl|cup/i, 'Tableware'],
+  [/shoe|sneaker|boot|slide/i, 'Shoes'],
+  [/hat|cap|beanie/i, 'Hats'],
+  [/pant|jogger|legging|jean|sweats|shorts/i, 'Pants'],
+  [/shirt|tee|top|hoodie|sweater|jacket/i, 'Clothing'],
+  [/ticket|concert|game/i, 'Tickets'],
+  [/ring|necklace|bracelet|earring/i, 'Jewelry'],
 ]
 
-const KEYWORDS: [RegExp, Category][] = [
-  [/book|reader|textbook|cs ?\d|econ|math|chem|notes/i, 'Textbooks'],
-  [/chair|desk|couch|futon|lamp|fridge|table|shelf|bed|rug|plant/i, 'Furniture'],
-  [/phone|laptop|ipad|airpods|monitor|switch|xbox|ps5|controller|camera|headphone|calculator/i, 'Electronics'],
-  [/jacket|shirt|shoe|sneaker|hoodie|dress|fleece|jeans/i, 'Clothing'],
-  [/ticket|game|concert|show/i, 'Tickets'],
-  [/sublet|room|apartment|lease/i, 'Sublets'],
-]
-
-const suggestCategory = (title: string) => KEYWORDS.find(([re]) => re.test(title))?.[1] ?? null
+const suggest = (title: string) => KEYWORDS.find(([re]) => re.test(title))?.[1] ?? null
 
 export function Sell({ onPost, onCancel }: { onPost: (l: Listing) => void; onCancel: () => void }) {
   const [step, setStep] = useState(0)
-  const [photo, setPhoto] = useState(2)
+  const [photo, setPhoto] = useState(SAMPLE_PHOTOS[0])
   const [title, setTitle] = useState('')
-  const [category, setCategory] = useState<Category | null>(null)
-  const [condition, setCondition] = useState<Condition>('Good')
-  const [free, setFree] = useState(false)
+  const [category, setCategory] = useState<string | null>(null)
+  const [condition, setCondition] = useState<Condition>('Used')
+  const [size, setSize] = useState('n/a')
   const [amount, setAmount] = useState('')
   const [meetup, setMeetup] = useState(MEETUPS[0])
   const [description, setDescription] = useState('')
 
-  const suggested = suggestCategory(title)
+  const suggested = suggest(title)
   const cat = category ?? suggested
-  const guide = cat && !free ? priceGuide(cat, condition) : null
-  const value = free ? 0 : Number(amount) || 0
-
-  const steps = ['Photos', 'Details', 'Review']
-  const canNext = step === 0 ? title.trim().length >= 3 : step === 1 ? !!cat && (free || value > 0) : true
+  const guide = cat ? priceGuide(cat, condition) : null
+  const price = Number(amount) || 0
+  const canNext = step === 0 ? title.trim().length >= 3 : step === 1 ? !!cat && price > 0 : true
 
   const listing: Listing = {
     id: `mine-${Date.now()}`,
-    title: title.trim() || 'Untitled item',
-    price: value,
-    category: cat ?? 'Free',
+    title: title.trim(),
+    price,
+    photo,
+    categories: cat ? [cat] : ['Other'],
     condition,
-    emoji: PHOTOS[photo].emoji,
-    bg: PHOTOS[photo].bg,
+    size,
+    description: description.trim() || 'No description yet.',
+    postedMin: 0,
     seller: 'you',
     meetup,
-    postedMin: 0,
-    description: description.trim() || 'No description yet.',
     saves: 0,
   }
 
   return (
-    <div className="screen split sell">
-      <header className="hero slim">
-        <Bubbles count={10} seed={7} />
-        <div className="hero-top">
-          <button className="icon-btn light" onClick={step ? () => setStep(step - 1) : onCancel} aria-label={step ? 'Back' : 'Cancel'}>
-            <Icon name={step ? 'back' : 'x'} size={20} />
-          </button>
-          <h1>Sell an item</h1>
-          <span />
-        </div>
-        <ol className="stepper">
-          {steps.map((s, i) => (
-            <li key={s} className={i === step ? 'on' : i < step ? 'done' : ''}>
-              <span>{i < step ? '✓' : i + 1}</span>
-              {s}
-            </li>
-          ))}
-        </ol>
+    <div className="screen sell">
+      <header className="d-header">
+        <button className="back" onClick={step ? () => setStep(step - 1) : onCancel} aria-label={step ? 'Back' : 'Cancel'}>
+          <Icon name={step ? 'back' : 'x'} size={24} stroke={2.6} />
+        </button>
+        <h2 className="h-title">Sell an item</h2>
+        <span style={{ width: 34 }} />
       </header>
+      <ol className="stepper">
+        {['Photo', 'Details', 'Review'].map((s, i) => (
+          <li key={s} className={i === step ? 'on' : i < step ? 'done' : ''}>
+            <span>{i < step ? '✓' : i + 1}</span>
+            {s}
+          </li>
+        ))}
+      </ol>
 
-      <div className="sell-body scroll">
+      <div className="scroll sell-body">
         {step === 0 && (
           <>
-            <label className="field-label">Add photos</label>
-            <div className="photo-picker">
-              {PHOTOS.map((p, i) => (
-                <button
-                  key={i}
-                  className={`photo ${photo === i ? 'on' : ''}`}
-                  style={{ background: p.bg }}
-                  onClick={() => setPhoto(i)}
-                  aria-label={`Photo ${i + 1}`}
-                >
-                  {p.emoji}
+            <div className="photo-row">
+              <label className="photo add">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) setPhoto(URL.createObjectURL(f))
+                  }}
+                />
+                <Icon name="camera" size={24} />
+                <span>Add photo</span>
+              </label>
+              {[...(SAMPLE_PHOTOS.includes(photo) ? [] : [photo]), ...SAMPLE_PHOTOS].map((p) => (
+                <button key={p} className={`photo ${photo === p ? 'on' : ''}`} onClick={() => setPhoto(p)} aria-label="Use this photo">
+                  <img src={p} alt="" />
                 </button>
               ))}
             </div>
-            <p className="hint">Tip: listings with a clear photo of the actual item get more messages.</p>
-            <label className="field-label" htmlFor="title">
+            <label className="f-label" htmlFor="title">
               What are you selling?
             </label>
-            <input
-              id="title"
-              className="input"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Nintendo Switch controller"
-            />
+            <input id="title" className="field" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. desk lamp" />
             {suggested && (
-              <p className="suggest">
+              <p className="hint red">
                 ✨ Looks like <b>{suggested}</b>. We'll file it there.
               </p>
             )}
@@ -115,101 +106,87 @@ export function Sell({ onPost, onCancel }: { onPost: (l: Listing) => void; onCan
 
         {step === 1 && (
           <>
-            <label className="field-label">Category</label>
-            <div className="chips">
-              {CATEGORIES.filter((c) => c.name !== 'Free').map((c) => (
-                <button key={c.name} className={`chip ${cat === c.name ? 'on' : ''}`} onClick={() => setCategory(c.name)}>
+            <label className="f-label">Category</label>
+            <div className="opt-row">
+              {CATEGORIES.map((c) => (
+                <button key={c.name} className={`opt small ${cat === c.name ? 'on' : ''}`} onClick={() => setCategory(c.name)}>
                   {c.emoji} {c.name}
                 </button>
               ))}
             </div>
-            <label className="field-label">Condition</label>
-            <div className="seg light">
-              {(['New', 'Like new', 'Good', 'Fair'] as Condition[]).map((c) => (
-                <button key={c} className={condition === c ? 'on' : ''} onClick={() => setCondition(c)}>
+            <label className="f-label">Condition</label>
+            <div className="opt-grid">
+              {(['New', 'Used'] as Condition[]).map((c) => (
+                <button key={c} className={`opt ${condition === c ? 'on' : ''}`} onClick={() => setCondition(c)}>
                   {c}
                 </button>
               ))}
             </div>
-            <label className="field-label" htmlFor="price">
+            <label className="f-label">Size</label>
+            <div className="opt-row">
+              {['n/a', 'XS', 'S', 'M', 'L', 'XL'].map((s) => (
+                <button key={s} className={`opt small ${size === s ? 'on' : ''}`} onClick={() => setSize(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+            <label className="f-label" htmlFor="price">
               Price
             </label>
-            <div className="price-input">
-              <div className={`amount ${free ? 'disabled' : ''}`}>
-                <span>$</span>
-                <input
-                  id="price"
-                  type="number"
-                  min={1}
-                  disabled={free}
-                  value={free ? '' : amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <label className="free-toggle">
-                <input type="checkbox" checked={free} onChange={(e) => setFree(e.target.checked)} /> Give it away
-              </label>
-            </div>
+            <label className="amount">
+              <span>$</span>
+              <input id="price" type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+            </label>
             {guide && (
               <button className="guide" onClick={() => setAmount(String(Math.round((guide[0] + guide[1]) / 2)))}>
-                📊 Similar {cat!.toLowerCase()} in {condition.toLowerCase()} condition sell for{' '}
+                📊 Similar {cat!.toLowerCase()} ({condition.toLowerCase()}) sell for{' '}
                 <b>
                   ${guide[0]}–${guide[1]}
                 </b>
                 . <u>Use ${Math.round((guide[0] + guide[1]) / 2)}</u>
               </button>
             )}
-            <label className="field-label">Pickup spot</label>
-            <div className="chips">
+            <label className="f-label">Pickup spot</label>
+            <div className="opt-row">
               {MEETUPS.map((m) => (
-                <button key={m} className={`chip ${meetup === m ? 'on' : ''}`} onClick={() => setMeetup(m)}>
+                <button key={m} className={`opt small ${meetup === m ? 'on' : ''}`} onClick={() => setMeetup(m)}>
                   📍 {m}
                 </button>
               ))}
             </div>
-            <label className="field-label" htmlFor="desc">
-              Description <span className="muted">(optional)</span>
+            <label className="f-label" htmlFor="desc">
+              Description
             </label>
-            <textarea
-              id="desc"
-              className="input"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Condition details, why you're selling, what's included…"
-            />
+            <textarea id="desc" className="field" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Condition details, what's included…" />
           </>
         )}
 
         {step === 2 && (
           <>
-            <p className="muted small">This is how your listing will look to other students.</p>
+            <p className="muted center">How your listing will look to other Stanford students:</p>
             <div className="preview">
-              <div className="tile" style={{ background: listing.bg }}>
-                <span className="tile-emoji">{listing.emoji}</span>
-              </div>
-              <div className="card-body">
-                <div className="price-row">
-                  <strong className={listing.price === 0 ? 'free' : ''}>{price(listing.price)}</strong>
+              <div className="l-card">
+                <div className="l-photo">
+                  <img src={listing.photo} alt="" />
+                  <span className="l-badge new">New</span>
                 </div>
-                <p className="title">{listing.title}</p>
-                <p className="meta">
-                  {listing.condition} · {listing.category} · 📍 {listing.meetup}
-                </p>
+                <div className="l-info">
+                  <span className="l-price">{money(listing.price)}</span>
+                  <span className="l-title">{listing.title}</span>
+                </div>
               </div>
             </div>
             <ul className="checklist">
               <li>✓ Posted under your anonymous Fizz handle</li>
-              <li>✓ Buyers see your .edu verified badge</li>
+              <li>✓ Buyers see you're a verified Stanford student</li>
+              <li>✓ Meetup at {meetup}</li>
               <li>✓ Offers arrive as cards you can accept or counter</li>
             </ul>
           </>
         )}
       </div>
-
       <div className="action-bar">
-        <button className="primary full" disabled={!canNext} onClick={() => (step < 2 ? setStep(step + 1) : onPost(listing))}>
+        <button className="red-btn full" disabled={!canNext} onClick={() => (step < 2 ? setStep(step + 1) : onPost(listing))}>
           {step < 2 ? 'Continue' : 'Post listing'}
         </button>
       </div>

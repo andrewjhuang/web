@@ -1,97 +1,156 @@
-export type Category = 'Textbooks' | 'Furniture' | 'Electronics' | 'Clothing' | 'Tickets' | 'Sublets' | 'Free'
-export type Condition = 'New' | 'Like new' | 'Good' | 'Fair'
+/**
+ * Listings, posts and clubs are taken from the team's Figma mockups
+ * ("141 - fizz" page). Seller handles, ratings and offers are simulated.
+ */
 
-export const CATEGORIES: { name: Category; emoji: string }[] = [
+export const CATEGORIES: { name: string; emoji: string }[] = [
   { name: 'Textbooks', emoji: '📚' },
+  { name: 'Electronics', emoji: '💻' },
+  { name: 'Clothing', emoji: '👕' },
+  { name: 'Vehicles', emoji: '🚲' },
+  { name: 'Tableware', emoji: '🍽️' },
   { name: 'Furniture', emoji: '🛋️' },
-  { name: 'Electronics', emoji: '🎧' },
-  { name: 'Clothing', emoji: '🧥' },
-  { name: 'Tickets', emoji: '🎟️' },
-  { name: 'Sublets', emoji: '🏠' },
-  { name: 'Free', emoji: '🎁' },
+  { name: 'Health', emoji: '🏋️' },
+  { name: 'Jewelry', emoji: '💍' },
+  { name: 'Shoes', emoji: '👟' },
+  { name: 'Tickets', emoji: '🎫' },
+  { name: 'Accessories', emoji: '🧷' },
+  { name: 'Hats', emoji: '🧢' },
+  { name: 'Shirts', emoji: '👚' },
+  { name: 'Pants', emoji: '👖' },
+  { name: 'Athletic', emoji: '🎽' },
+  { name: 'Other', emoji: '❓' },
 ]
+
+export type Condition = 'New' | 'Used'
+export type Audience = 'Womens' | 'Mens'
 
 /** Public, well-lit handoff spots (shown instead of dorm room numbers). */
 export const MEETUPS = ['Tresidder Union', 'Green Library', 'Main Quad', 'Arrillaga Dining', 'EVGR Courtyard', 'Wilbur Hall lobby']
 
-export type Seller = { handle: string; verified: boolean; rating: number; sales: number; replies: string; color: string }
+export type Seller = { handle: string; rating: number; sales: number; replies: string; color: string }
 
 export const SELLERS: Record<string, Seller> = {
-  otter: { handle: 'sleepy otter', verified: true, rating: 4.9, sales: 14, replies: 'usually within an hour', color: '#8b5cf6' },
-  cactus: { handle: 'cozy cactus', verified: true, rating: 4.7, sales: 6, replies: 'usually same day', color: '#22c55e' },
-  comet: { handle: 'quiet comet', verified: true, rating: 5.0, sales: 22, replies: 'usually within 15 min', color: '#f59e0b' },
-  heron: { handle: 'brave heron', verified: false, rating: 4.2, sales: 2, replies: 'usually within a day', color: '#06b6d4' },
-  maple: { handle: 'witty maple', verified: true, rating: 4.8, sales: 9, replies: 'usually within an hour', color: '#ef4444' },
+  otter: { handle: 'sleepy otter', rating: 4.9, sales: 14, replies: 'within an hour', color: '#5b5bd6' },
+  cactus: { handle: 'cozy cactus', rating: 4.7, sales: 6, replies: 'same day', color: '#3fa76a' },
+  comet: { handle: 'quiet comet', rating: 5.0, sales: 22, replies: 'within 15 min', color: '#e07b3a' },
+  heron: { handle: 'brave heron', rating: 4.3, sales: 2, replies: 'within a day', color: '#3a9bd8' },
+  maple: { handle: 'witty maple', rating: 4.8, sales: 9, replies: 'within an hour', color: '#d63a3a' },
 }
 
 export type Listing = {
   id: string
   title: string
   price: number
-  /** Original retail price, to show the deal. */
-  retail?: number
-  category: Category
+  photo: string
+  categories: string[]
   condition: Condition
-  emoji: string
-  bg: string
-  seller: keyof typeof SELLERS | 'you'
-  meetup: string
-  postedMin: number
+  size: string
+  audience?: Audience
   description: string
+  postedMin: number
+  seller: string
+  meetup: string
   saves: number
-  /** Price dropped since you saved it. */
-  dropFrom?: number
-  /** Other courses or tags that help search. */
-  tags?: string[]
+  /** Price before a drop, if the seller lowered it. */
+  wasPrice?: number
 }
 
+const MO = 43200
 export const LISTINGS: Listing[] = [
-  { id: 'cs106b', title: 'CS 106B course reader + Programming Abstractions', price: 25, retail: 89, category: 'Textbooks', condition: 'Good', emoji: '📘', bg: 'linear-gradient(135deg,#c7d2fe,#a5b4fc)', seller: 'otter', meetup: 'Green Library', postedMin: 12, description: 'Some highlighting in chapters 1–6, otherwise clean. Used for CS 106B last quarter.', saves: 8, tags: ['cs106b', 'programming'] },
-  { id: 'futon', title: 'Gray futon (folds flat)', price: 60, retail: 220, category: 'Furniture', condition: 'Good', emoji: '🛋️', bg: 'linear-gradient(135deg,#e9d5ff,#c4b5fd)', seller: 'cactus', meetup: 'EVGR Courtyard', postedMin: 45, description: 'Moving out of EV. You pick up — I can help carry it to a car.', saves: 15 },
-  { id: 'airpods', title: 'AirPods Pro (2nd gen)', price: 120, retail: 249, category: 'Electronics', condition: 'Like new', emoji: '🎧', bg: 'linear-gradient(135deg,#bae6fd,#93c5fd)', seller: 'comet', meetup: 'Tresidder Union', postedMin: 5, description: 'Barely used, comes with case and all tips. Receipt available.', saves: 21 },
-  { id: 'bigGame', title: 'Big Game ticket — student section', price: 45, category: 'Tickets', condition: 'New', emoji: '🏈', bg: 'linear-gradient(135deg,#fecaca,#fca5a5)', seller: 'maple', meetup: 'Main Quad', postedMin: 90, description: "Can't make it anymore. Transfer through the ticket app.", saves: 31 },
-  { id: 'lamp', title: 'Desk lamp + extension cord', price: 0, category: 'Free', condition: 'Good', emoji: '💡', bg: 'linear-gradient(135deg,#fef08a,#fde047)', seller: 'heron', meetup: 'Wilbur Hall lobby', postedMin: 30, description: 'Free to whoever grabs it first this week.', saves: 4 },
-  { id: 'patagonia', title: 'Patagonia fleece, size M', price: 40, retail: 139, category: 'Clothing', condition: 'Like new', emoji: '🧥', bg: 'linear-gradient(135deg,#bbf7d0,#86efac)', seller: 'cactus', meetup: 'Arrillaga Dining', postedMin: 180, description: 'Worn a handful of times. Too warm for Palo Alto, honestly.', saves: 9, dropFrom: 55 },
-  { id: 'monitor', title: '27" Dell monitor', price: 90, retail: 260, category: 'Electronics', condition: 'Good', emoji: '🖥️', bg: 'linear-gradient(135deg,#ddd6fe,#a78bfa)', seller: 'otter', meetup: 'Tresidder Union', postedMin: 240, description: '1440p, includes HDMI cable. Small scuff on the stand.', saves: 12 },
-  { id: 'sublet', title: 'Summer sublet — 1BR near campus', price: 1450, category: 'Sublets', condition: 'Good', emoji: '🏠', bg: 'linear-gradient(135deg,#fed7aa,#fdba74)', seller: 'maple', meetup: 'Main Quad', postedMin: 600, description: 'June–Aug, furnished, 10 min bike to the Quad. Price is per month.', saves: 27 },
-  { id: 'econ1', title: 'ECON 1 textbook (Mankiw)', price: 30, retail: 120, category: 'Textbooks', condition: 'Fair', emoji: '📗', bg: 'linear-gradient(135deg,#a7f3d0,#6ee7b7)', seller: 'heron', meetup: 'Green Library', postedMin: 1440, description: 'Notes in margins, cover is worn. All pages intact.', saves: 3, tags: ['econ1', 'mankiw'] },
-  { id: 'minifridge', title: 'Mini fridge', price: 50, retail: 150, category: 'Furniture', condition: 'Good', emoji: '🧊', bg: 'linear-gradient(135deg,#cffafe,#67e8f9)', seller: 'comet', meetup: 'Wilbur Hall lobby', postedMin: 75, description: 'Works great, freezer section included. Cleaned and defrosted.', saves: 18, dropFrom: 65 },
-  { id: 'calc', title: 'TI-84 Plus calculator', price: 35, retail: 120, category: 'Electronics', condition: 'Good', emoji: '🧮', bg: 'linear-gradient(135deg,#e2e8f0,#cbd5e1)', seller: 'otter', meetup: 'Green Library', postedMin: 300, description: 'Fresh batteries. Fine for MATH 19–21.', saves: 5, tags: ['math19', 'math20', 'math21'] },
-  { id: 'hangers', title: 'Box of hangers + shower caddy', price: 0, category: 'Free', condition: 'Good', emoji: '🧺', bg: 'linear-gradient(135deg,#fbcfe8,#f9a8d4)', seller: 'maple', meetup: 'EVGR Courtyard', postedMin: 20, description: 'Leaving campus, everything must go!', saves: 2 },
+  { id: 'biology', title: 'Biology textbook', price: 30, photo: '/listings/biology.jpg', categories: ['Textbooks'], condition: 'New', size: 'n/a', description: 'Bought and never used!', postedMin: 20, seller: 'otter', meetup: 'Green Library', saves: 6 },
+  { id: 'scooter', title: 'Scooter', price: 200, photo: '/listings/scooter.jpg', categories: ['Vehicles'], condition: 'New', size: 'n/a', description: 'Only used once and I fell off', postedMin: 30, seller: 'comet', meetup: 'Tresidder Union', saves: 18, wasPrice: 240 },
+  { id: 'nikesweats', title: 'Nike sweats', price: 30, photo: '/listings/nikesweats.jpg', categories: ['Clothing', 'Pants'], condition: 'New', size: 'M', audience: 'Mens', description: 'Please buy this off of me.', postedMin: 120, seller: 'maple', meetup: 'Wilbur Hall lobby', saves: 4 },
+  { id: 'leggings', title: 'Lulu lemon leggings', price: 20, photo: '/listings/leggings.jpg', categories: ['Clothing', 'Pants', 'Athletic'], condition: 'New', size: 'XS', audience: 'Womens', description: 'Brand new with tags!', postedMin: 120, seller: 'cactus', meetup: 'Arrillaga Dining', saves: 11 },
+  { id: 'ebike', title: 'Pedal assist e-bike', price: 400, photo: '/listings/ebike.jpg', categories: ['Vehicles'], condition: 'New', size: 'MEDIUM', description: 'Bought but never used', postedMin: 2 * MO, seller: 'comet', meetup: 'EVGR Courtyard', saves: 27 },
+  { id: 'charger', title: 'iPad charger no brick', price: 24, photo: '/listings/charger.jpg', categories: ['Electronics'], condition: 'New', size: 'n/a', description: 'normal lightning charger', postedMin: 2 * MO, seller: 'heron', meetup: 'Tresidder Union', saves: 2 },
+  { id: 'wineglasses', title: 'Wine glasses', price: 15, photo: '/listings/wineglasses.jpg', categories: ['Tableware'], condition: 'New', size: 'n/a', description: '4 sets of wine glasses.', postedMin: 2 * MO, seller: 'cactus', meetup: 'EVGR Courtyard', saves: 5 },
+  { id: 'headphones', title: 'wired headphones', price: 10, photo: '/listings/headphones.jpg', categories: ['Electronics'], condition: 'Used', size: 'n/a', description: 'Need to get rid of.', postedMin: 3 * MO, seller: 'otter', meetup: 'Green Library', saves: 3 },
+  { id: 'lavalamp', title: 'Rose Gold Pink + Purple Lava Lamp', price: 20, photo: '/listings/lavalamp.jpg', categories: ['Electronics'], condition: 'Used', size: 'n/a', description: 'lit.', postedMin: 3 * MO, seller: 'maple', meetup: 'Main Quad', saves: 9 },
+  { id: 'joggers', title: 'Lululemon ABC joggers', price: 69.99, photo: '/listings/joggers.jpg', categories: ['Clothing', 'Pants'], condition: 'Used', size: 'L', audience: 'Mens', description: 'Worn once.', postedMin: 3 * MO, seller: 'heron', meetup: 'Arrillaga Dining', saves: 7, wasPrice: 85 },
+  { id: 'masonjars', title: 'mason jars', price: 5, photo: '/listings/masonjars.jpg', categories: ['Tableware'], condition: 'Used', size: 'n/a', description: '3 mason jars, gold plated lids', postedMin: 3 * MO, seller: 'cactus', meetup: 'EVGR Courtyard', saves: 1 },
+  { id: 'middleeast', title: 'Modern Middle East', price: 45, photo: '/listings/middleeast.jpg', categories: ['Textbooks'], condition: 'Used', size: 'n/a', description: 'Used for one quarter', postedMin: 3 * MO, seller: 'otter', meetup: 'Green Library', saves: 2 },
+  { id: 'pan', title: 'small pan', price: 16, photo: '/listings/pan.jpg', categories: ['Tableware', 'Other'], condition: 'Used', size: 'n/a', description: 'Works really well. I am moving out.', postedMin: 4 * MO, seller: 'maple', meetup: 'Wilbur Hall lobby', saves: 1 },
+  { id: 'nikeshorts', title: 'black nike shorts', price: 25, photo: '/listings/nikeshorts.jpg', categories: ['Clothing', 'Pants', 'Athletic', 'Other'], condition: 'New', size: 'M', audience: 'Mens', description: "Brand new w/ tags! Got a duplicate from an event so I don't need it!", postedMin: 5 * MO, seller: 'comet', meetup: 'Arrillaga Dining', saves: 4 },
+  { id: 'table', title: 'Table', price: 30, photo: '/listings/table.jpg', categories: ['Furniture', 'Other'], condition: 'New', size: 'n/a', description: 'Good for games.', postedMin: 6 * MO, seller: 'heron', meetup: 'Main Quad', saves: 3 },
 ]
 
-export function ago(min: number) {
-  if (min < 60) return `${min}m`
-  if (min < 1440) return `${Math.round(min / 60)}h`
-  return `${Math.round(min / 1440)}d`
+export const RECENT_SEARCHES = ['glass plates', 'glassware', 'Rain boots', 'music stand', 'water bottles', 'Hydroflask']
+
+export function ago(min: number, long = false) {
+  if (min < 60) return long ? `${min} minute${min === 1 ? '' : 's'} ago` : `${min}m`
+  if (min < 1440) {
+    const h = Math.round(min / 60)
+    return long ? `${h} hour${h === 1 ? '' : 's'} ago` : `${h}hr${h === 1 ? '' : 's'}`
+  }
+  if (min < MO) {
+    const d = Math.round(min / 1440)
+    return long ? `${d} day${d === 1 ? '' : 's'} ago` : `${d}d`
+  }
+  const m = Math.round(min / MO)
+  return long ? `${m} month${m === 1 ? '' : 's'} ago` : `${m}mo`
 }
 
-export const price = (n: number) => (n === 0 ? 'Free' : `$${n.toLocaleString()}`)
+export const money = (n: number) => (n === 0 ? 'Free' : `$${n.toFixed(2)}`)
 
-/** Suggested price range from similar listings in a category (used by the sell flow). */
-export function priceGuide(category: Category, condition: Condition): [number, number] | null {
-  const similar = LISTINGS.filter((l) => l.category === category && l.price > 0)
+/** Suggested price range from similar listings (used by the sell flow). */
+export function priceGuide(category: string, condition: Condition): [number, number] | null {
+  const similar = LISTINGS.filter((l) => l.categories.includes(category))
   if (!similar.length) return null
   const avg = similar.reduce((s, l) => s + l.price, 0) / similar.length
-  const k = { New: 1.15, 'Like new': 1, Good: 0.85, Fair: 0.65 }[condition]
-  return [Math.round(avg * k * 0.8), Math.round(avg * k * 1.15)]
+  const k = condition === 'New' ? 1.1 : 0.8
+  return [Math.max(1, Math.round(avg * k * 0.75)), Math.round(avg * k * 1.2)]
 }
 
-/* ---------------- Other parts of Fizz ---------------- */
+/* ---------------- Feed ---------------- */
 
-export type Post = { id: string; text: string; votes: number; comments: number; min: number; tag?: string; poll?: { options: string[]; votes: number[] } }
+export type Tag = 'SHOUTOUT' | 'VIDEO' | 'EVENT' | 'RIP' | 'DUB' | 'DM ME'
+
+export const TAG_COLOR: Record<Tag, string> = {
+  SHOUTOUT: '#3fa0d6',
+  VIDEO: '#e0445f',
+  EVENT: '#e07b3a',
+  RIP: '#5b5bd6',
+  DUB: '#3b7be0',
+  'DM ME': '#8bc34a',
+}
+
+export type Club = { id: string; name: string; color?: string; verified?: boolean }
+
+export const CLUBS: Record<string, Club> = {
+  arbor: { id: 'arbor', name: 'arbor', verified: true },
+  ebf: { id: 'ebf', name: 'EBF', verified: true },
+}
+
+export type Post = {
+  id: string
+  tag: Tag
+  text: string
+  votes: number
+  min: number
+  image?: string
+  video?: boolean
+  club?: string
+  when?: string
+}
 
 export const POSTS: Post[] = [
-  { id: 'p1', text: 'whoever plays piano in the Toyon lounge at 1am… you are the reason I passed my midterm', votes: 412, comments: 38, min: 25 },
-  { id: 'p2', text: 'Best late night food on campus?', votes: 188, comments: 96, min: 60, poll: { options: ['TAP', 'Late Nite @ Arrillaga', 'CoHo', 'DoorDash to my door'], votes: [41, 33, 12, 58] } },
-  { id: 'p3', text: 'PSA: the bike thief near Meyer is back. lock both wheels 🔒', votes: 276, comments: 21, min: 140, tag: 'PSA' },
-  { id: 'p4', text: 'is it normal to have 3 midterms in one day or is CS just like this', votes: 334, comments: 57, min: 200 },
-  { id: 'p5', text: 'the ducks at Lake Lag have more of a social life than me', votes: 521, comments: 44, min: 320 },
+  { id: 'bed', tag: 'SHOUTOUT', text: 'how my bed feel after hitting that alarm clock', votes: 536, min: 60, image: '/posts/bed.jpg' },
+  { id: 'arbor-dj', tag: 'EVENT', club: 'arbor', when: 'Tues 3/4 @ 10PM', text: 'dj risky fart at on call rn!!!!!!', votes: 312, min: 600, image: '/posts/arbor.jpg' },
+  { id: 'video', tag: 'VIDEO', text: 'Me @ 3am choosing to get emotional over my stolen frosh bike and failed spring situationship as a productive excuse to delay working on my cs109 and cs107 pset be like:', votes: 536, min: 60, image: '/posts/video.jpg', video: true },
+  { id: 'curis', tag: 'DM ME', text: "Still don't see anything for curis, how did y'all find out? Do they still send emails or some notification if you are rejected?", votes: 124, min: 60 },
+  { id: 'ebf', tag: 'EVENT', club: 'ebf', when: 'Wed 3/5 @ 10PM', text: 'last happy hour of the quarter !', votes: 207, min: 540, image: '/posts/ebf.jpg' },
+  { id: 'dating', tag: 'RIP', text: 'DATING IS SHIT ON THIS CAMPUS. WHY IS THIS SO HARD', votes: 1200, min: 1440 },
+  { id: 'openmic', tag: 'EVENT', club: 'arbor', when: 'Wed 3/5 @ 8PM', text: 'Tomorrow!', votes: 34, min: 480, image: '/posts/openmic.jpg' },
+  { id: 'raccoon', tag: 'DUB', text: 'finally made a friend on campus >.<', votes: 2700, min: 40320, image: '/posts/raccoon.jpg' },
+  { id: 'cs109', tag: 'RIP', text: 'CS 109 midterm lfg', votes: 2700, min: 120 },
 ]
 
-export const NOTIFICATIONS = [
-  { icon: '💸', text: 'Price drop: Mini fridge is now $50 (was $65)', min: 8 },
-  { icon: '🔥', text: 'Your post hit 100 upvotes', min: 40 },
-  { icon: '💬', text: 'quiet comet replied to your offer', min: 52 },
-  { icon: '📚', text: 'New listing matches “cs106b”', min: 120 },
-]
+export const COMMENTS: Record<string, string[]> = {
+  default: ['real', 'this is so me', 'the accuracy 😭'],
+  curis: ['they email everyone eventually, give it a week', 'same boat, refreshing my inbox every 5 min', 'my friend heard back yesterday :/'],
+  dating: ['the ratio is not ratio-ing', 'try joining a club fr', 'have you tried the raccoon'],
+  raccoon: ['bestie behavior', 'name him', 'rabies speedrun'],
+}
+
+export const fmtVotes = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n))
