@@ -5,6 +5,7 @@ Interactive project prototypes, each deployable as its own public Vercel site an
 ```
 apps/
   guild-together/   Guild concept: rebrand + study buddies + coworker nomination, as one flow
+  campus-park/      CampusPark: sensor-powered Stanford parking app, with a live sensor simulation
 ```
 
 ## Running an app locally
