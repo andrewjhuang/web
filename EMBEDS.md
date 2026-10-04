@@ -31,12 +31,6 @@ Pick whatever fits your layout; these just look good.
 | Fizz | 600–700px | 640–760px |
 | I Scream Room | 560–620px | 260px, or more if you want the dark padding |
 
---- | --- | --- |
-| Guild | 840px | 1200px |
-| CampusPark | 810px | 1720px |
-| Fizz | 830px | 1690px |
-| I Scream Room | keeps a 960 × 616 shape automatically (`aspect-ratio`) | same |
-
 ---
 
 ## Guild — “Grow in good company”
