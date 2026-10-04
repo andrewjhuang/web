@@ -71,8 +71,8 @@ export default function App() {
         <div className="brand">
           <img src="/icon.svg" alt="" width={64} height={64} />
           <div>
-            <h1>CampusPark</h1>
-            <p>University Campus Parking App</p>
+            <h1>ParkCampus</h1>
+            <p>University ParkCampusing App</p>
           </div>
         </div>
         <p className="intro">
@@ -148,7 +148,7 @@ export default function App() {
         </div>
       </aside>
 
-      <div className="phone" aria-label="CampusPark app prototype">
+      <div className="phone" aria-label="ParkCampus app prototype">
         <div className="statusbar">
           <span>{formatHour(hour).replace(/ (AM|PM)/, '')}</span>
           <span className="notch" />
