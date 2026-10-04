@@ -12,18 +12,9 @@ export function starPath(cx: number, cy: number, r: number) {
   return `M${pts.join('L')}Z`
 }
 
-/** The Founders cypress, redrawn as a wind-shaped Monterey cypress. */
-export function Cypress({ color = 'currentColor', size = 40 }: { color?: string; size?: number }) {
-  return (
-    <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden>
-      <path
-        d="M6 20c2-9 14-13 24-11 6-5 18-4 24 2 6 1 9 6 6 10-3 4-10 4-15 3-4 3-11 4-17 2-6 2-15 2-19-1-2-1-3-3-3-5z"
-        fill={color}
-      />
-      <path d="M30 24c1 9-1 18-6 26-2 3-1 6 3 6h10c3 0 4-3 2-6-4-7-5-15-4-24z" fill={color} />
-      <path d="M33 30c4-2 8-2 11 0" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
-    </svg>
-  )
+/** The Founders logomark (the team's tree), as a green or cream image. */
+export function Logomark({ size = 40, light = false }: { size?: number; light?: boolean }) {
+  return <img src={light ? '/logomark-light.png' : '/logomark.png'} width={size} height={Math.round((size * 189) / 278)} alt="" aria-hidden className="logomark" />
 }
 
 /** Oval crest, in the style of a 1930s souvenir-menu trademark. */
@@ -32,12 +23,7 @@ export function Crest({ size = 64 }: { size?: number }) {
     <svg viewBox="0 0 80 100" width={size * 0.8} height={size} aria-hidden className="crest">
       <ellipse cx="40" cy="54" rx="34" ry="42" fill="var(--pacific)" stroke="var(--ink)" strokeWidth="2.5" />
       <ellipse cx="40" cy="54" rx="29" ry="37" fill="none" stroke="var(--paper)" strokeWidth="1.2" />
-      <g transform="translate(16 30)">
-        <svg viewBox="0 0 64 64" width="48" height="48">
-          <path d="M6 20c2-9 14-13 24-11 6-5 18-4 24 2 6 1 9 6 6 10-3 4-10 4-15 3-4 3-11 4-17 2-6 2-15 2-19-1-2-1-3-3-3-5z" fill="var(--paper)" />
-          <path d="M30 24c1 9-1 18-6 26-2 3-1 6 3 6h10c3 0 4-3 2-6-4-7-5-15-4-24z" fill="var(--paper)" />
-        </svg>
-      </g>
+      <image href="/logomark-light.png" x="14" y="36" width="52" height="35" />
       <path d="M22 84q18 8 36 0" stroke="var(--marigold)" strokeWidth="2.5" fill="none" />
       <rect x="28" y="2" width="24" height="12" rx="2" fill="var(--ink)" />
       <path d={starPath(40, 8, 4.5)} fill="var(--marigold)" />
@@ -72,8 +58,7 @@ export function StarBand({ height = 26 }: { height?: number }) {
 }
 
 /**
- * Hero poster: stepped amber towers around a star curtain, with the Founders
- * cypress standing in for the Pacifica statue, reflected in a pool at dusk.
+ * Hero poster: stepped amber towers around a star curtain, reflected in a pool at dusk.
  */
 export function HeroPoster() {
   const uid = useId().replace(/[^a-z0-9]/gi, '')
@@ -95,7 +80,7 @@ export function HeroPoster() {
     })
   }
   return (
-    <svg className="hero-poster" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Art deco poster: the Founders cypress in front of a star curtain at dusk">
+    <svg className="hero-poster" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Art deco poster: amber towers and a star curtain at dusk">
       <defs>
         <linearGradient id={`sky-${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#3f7fa6" />
@@ -128,20 +113,9 @@ export function HeroPoster() {
         <rect x="690" y="90" width="80" height="470" fill={`url(#tower-${uid})`} />
         <rect x="500" y="60" width="200" height="500" fill={`url(#stars-${uid})`} />
         <rect x="500" y="60" width="200" height="500" fill="none" stroke="#c9842f" strokeWidth="6" />
-        {/* The cypress */}
-        <g transform="translate(470 210) scale(4.1)" fill="#1f4a3a">
-          <path d="M6 20c2-9 14-13 24-11 6-5 18-4 24 2 6 1 9 6 6 10-3 4-10 4-15 3-4 3-11 4-17 2-6 2-15 2-19-1-2-1-3-3-3-5z" />
-          <path d="M30 24c1 9-1 18-6 26-2 3-1 6 3 6h10c3 0 4-3 2-6-4-7-5-15-4-24z" />
-        </g>
-        {/* Terrace, hedges and small trees */}
+        {/* Terrace and hedge */}
         <rect x="0" y="540" width="1200" height="24" fill="#e9c98e" />
         <rect x="380" y="520" width="440" height="22" fill="#d9a85e" />
-        {[120, 340, 860, 1080].map((x) => (
-          <g key={x}>
-            <rect x={x - 3} y="470" width="6" height="70" fill="#3b2a1a" />
-            <ellipse cx={x} cy="462" rx="34" ry="44" fill="#2f5b3f" />
-          </g>
-        ))}
         <rect x="0" y="530" width="1200" height="14" fill="#2f5b3f" opacity="0.85" />
         {/* Reflecting pool */}
         <rect y="564" width="1200" height="196" fill={`url(#pool-${uid})`} />

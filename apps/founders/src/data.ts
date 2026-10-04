@@ -12,7 +12,7 @@ export type Location = {
   tagline: string
   address: string[]
   hours: [string, string][]
-  photo?: string
+  photo: string
   postcard: string
   note: string
   coastal?: boolean
@@ -54,6 +54,7 @@ export const LOCATIONS: Location[] = [
       ['Weekdays', '8 am – 4 pm'],
       ['Weekends', '7 am – 5 pm'],
     ],
+    photo: '/photos/hmb.jpg',
     postcard: 'Greetings from Half Moon Bay',
     note: 'Fog in the morning, sun by noon. Crab toast in season, straight off the boats.',
     coastal: true,
@@ -67,6 +68,7 @@ export const LOCATIONS: Location[] = [
       ['Weekdays', '7 am – 3 pm'],
       ['Weekends', '7 am – 4 pm'],
     ],
+    photo: '/photos/pacifica.jpg',
     postcard: 'Greetings from Pacifica',
     note: 'Surfer hours: coffee from 7, chowder by 11, and a window seat facing the waves.',
     coastal: true,

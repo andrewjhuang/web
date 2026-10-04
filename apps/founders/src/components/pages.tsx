@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { go, useStore } from '../App'
 import { ALL_ITEMS, EVENTS, itemById, LOCATIONS, locById, money, PARTNERS, type LocationId } from '../data'
-import { CoastMap, Cypress, HeroPoster, StarBand } from './art'
+import { CoastMap, HeroPoster, Logomark, StarBand } from './art'
 import { MenuBoard, Postcard, SectionTitle, Star } from './menu'
 
 const NAMES = Object.fromEntries(LOCATIONS.map((l) => [l.id, l.name])) as Record<LocationId, string>
@@ -85,7 +85,7 @@ export function HomePage() {
         <div className="loc-grid">
           {LOCATIONS.map((l) => (
             <a key={l.id} className={`loc-card ${l.coastal ? 'coastal' : ''}`} href="#/locations" onClick={() => setLocation(l.id)}>
-              {l.photo ? <Postcard src={l.photo} /> : <CoastCard name={l.name} />}
+              <Postcard src={l.photo} />
               <span className="loc-name">{l.name}</span>
               <span className="loc-tag">
                 {l.tagline}
@@ -112,39 +112,6 @@ export function HomePage() {
         </div>
       </section>
     </>
-  )
-}
-
-/** A painted "postcard" for the coastal cafes, which have no photos yet. */
-export function CoastCard({ name }: { name: string }) {
-  return (
-    <figure className="postcard coast-card">
-      <div className="pc-img">
-        <svg viewBox="0 0 300 200" preserveAspectRatio="xMidYMid slice" aria-hidden>
-          <defs>
-            <linearGradient id="cc-sky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#8fbfd3" />
-              <stop offset="1" stopColor="#f6d6a0" />
-            </linearGradient>
-          </defs>
-          <rect width="300" height="200" fill="url(#cc-sky)" />
-          <circle cx="220" cy="118" r="26" fill="#f2a93b" />
-          <path d="M0 120 Q60 70 120 110 Q150 90 180 118 L180 200 L0 200Z" fill="#6f9a86" />
-          <rect y="124" width="300" height="76" fill="#2b6c8f" />
-          {[134, 150, 168, 186].map((y, i) => (
-            <path key={y} d={`M${20 + i * 10} ${y} q20 -6 40 0 t40 0 t40 0 t40 0 t40 0 t40 0`} stroke="#cfe4ec" strokeWidth="2" fill="none" opacity={0.7 - i * 0.12} />
-          ))}
-          <g transform="translate(24 84) scale(0.95)" fill="#1f4a3a">
-            <path d="M6 20c2-9 14-13 24-11 6-5 18-4 24 2 6 1 9 6 6 10-3 4-10 4-15 3-4 3-11 4-17 2-6 2-15 2-19-1-2-1-3-3-3-5z" />
-            <path d="M30 24c1 9-1 18-6 26-2 3-1 6 3 6h10c3 0 4-3 2-6-4-7-5-15-4-24z" />
-          </g>
-        </svg>
-        <span className="cc-greet">
-          Greetings from
-          <b>{name}</b>
-        </span>
-      </div>
-    </figure>
   )
 }
 
@@ -235,7 +202,7 @@ export function CheckoutPage() {
       <LocationPicker value={location} onChange={setLocation} label="Pick up at" />
       {lines.length === 0 ? (
         <div className="empty">
-          <Cypress size={64} color="var(--cypress)" />
+          <Logomark size={88} />
           <p>Your order is empty.</p>
           <a className="btn" href="#/order">
             Start an order
@@ -363,7 +330,7 @@ export function LocationsPage() {
               </button>
             ))}
           </div>
-          {loc.photo ? <Postcard src={loc.photo} caption={loc.postcard} /> : <CoastCard name={loc.name} />}
+          <Postcard src={loc.photo} caption={loc.postcard} />
           <h3>
             {loc.name}
             {loc.coastal && <span className="new">New</span>}
@@ -414,7 +381,7 @@ export function FarmPage() {
       <div className="wrap partners">
         {PARTNERS.map((p, i) => (
           <article key={p.name} className="partner">
-            {p.photo ? <Postcard src={p.photo} className={i % 2 ? 'tilt-r' : 'tilt-l'} /> : <div className="partner-mark"><Cypress size={56} color="var(--paper)" /></div>}
+            {p.photo ? <Postcard src={p.photo} className={i % 2 ? 'tilt-r' : 'tilt-l'} /> : <div className="partner-mark"><Logomark size={90} light /></div>}
             <div>
               <p className="kicker">{p.place}</p>
               <h3>{p.name}</h3>
@@ -573,7 +540,7 @@ export function CateringPage() {
       </div>
       {sent ? (
         <div className="empty">
-          <Cypress size={56} color="var(--cypress)" />
+          <Logomark size={80} />
           <p>Thanks! We’ll write back within a day.</p>
         </div>
       ) : (
