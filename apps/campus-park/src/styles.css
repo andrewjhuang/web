@@ -544,7 +544,8 @@ input[type='range'] {
 }
 
 .lot.disallowed .lot-shape {
-  opacity: 0.35;
+  stroke: #a9adb8;
+  stroke-dasharray: 3 2;
 }
 
 .lot.disallowed .lot-pin {
@@ -732,14 +733,6 @@ input[type='range'] {
   animation: blink 1.2s infinite;
 }
 
-.level {
-  display: grid;
-  grid-template-columns: 56px 1fr 60px;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  margin: 6px 0;
-}
 
 .bar {
   height: 10px;
@@ -754,11 +747,6 @@ input[type='range'] {
   transition: width 0.5s;
 }
 
-.level-free {
-  text-align: right;
-  color: var(--green-dark);
-  font-weight: 600;
-}
 
 /* ---------- Navigation ---------- */
 
@@ -876,33 +864,9 @@ input[type='range'] {
   color: var(--muted);
 }
 
-.permit-list {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-}
 
-.permit-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 0;
-  background: none;
-  padding: 11px 14px;
-  font-size: 13px;
-  text-align: left;
-  border-bottom: 1px solid #f2f3f6;
-}
 
-.permit-row span:nth-child(2) {
-  flex: 1;
-}
 
-.permit-row.on {
-  background: #f1fbf3;
-  font-weight: 600;
-}
 
 .check {
   color: var(--green-dark);
@@ -996,4 +960,216 @@ input[type='range'] {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---------- Permits, zones & rules ---------- */
+
+.street-label {
+  font-size: 7.5px;
+  fill: #a8a48a;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.seg {
+  display: flex;
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 3px;
+  margin-top: 12px;
+}
+
+.seg button {
+  flex: 1;
+  border: 0;
+  background: none;
+  border-radius: 999px;
+  padding: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.seg button.on {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(29, 36, 51, 0.12);
+}
+
+.rules {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  display: grid;
+  gap: 4px;
+}
+
+.rules li::before {
+  content: '○ ';
+}
+
+.rules li.on {
+  color: var(--ink);
+}
+
+.rules li.on::before {
+  content: '● ';
+  color: var(--green);
+}
+
+.open-note {
+  font-size: 12px;
+  background: #e9f8ec;
+  color: #23733a;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 0 0 10px;
+}
+
+.map-search .open-note {
+  margin-top: 6px;
+  box-shadow: 0 2px 8px rgba(29, 36, 51, 0.08);
+}
+
+.not-valid {
+  color: var(--muted);
+}
+
+.zones {
+  margin-top: 4px;
+}
+
+.zone-row {
+  display: grid;
+  grid-template-columns: auto 1fr 56px 44px 54px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin: 6px 0;
+}
+
+.zone-name {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zone-name em {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.zone-row.no .zone-name,
+.zone-row.no .zone-free {
+  color: var(--muted);
+}
+
+.zone-row .bar {
+  height: 8px;
+}
+
+.zone-free {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.zone-rule {
+  font-size: 10px;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--muted);
+}
+
+.zone-rule.yes {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.space.other.free {
+  background: #f0f1f4;
+  border: 1px dashed #c9ccd5;
+}
+
+.space.other.occ {
+  background: #dfe1e7;
+}
+
+.permit-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.permit-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.price {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green-dark);
+}
+
+.permit-card dl {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 4px 8px;
+  font-size: 12px;
+  margin: 10px 0 4px;
+}
+
+.permit-card dt {
+  color: var(--muted);
+}
+
+.permit-card dd {
+  margin: 0;
+}
+
+.permit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.permit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 11px;
+  text-align: left;
+  min-width: 0;
+}
+
+.permit-btn span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.permit-btn.on {
+  border-color: var(--green);
+  background: #f1fbf3;
+  font-weight: 600;
+}
+
+.source {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.source a {
+  color: var(--green-dark);
 }

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { distanceMi, formatHour, LOTS, spaceLabel, type Permit } from './data'
-import { freeCount, useSensors } from './sensors'
+import { useEffect, useMemo, useState } from 'react'
+import { distanceMi, enforced, formatHour, LOTS, spaceLabel, usableIndices, type Permit } from './data'
+import { freeIn, useSensors } from './sensors'
 import { CampusMap } from './components/CampusMap'
 import { Icon } from './components/bits'
-import { ListView, LotSheet, NavPanel, ProfileView, SearchBar, type Parked } from './components/Screens'
+import { ListView, LotSheet, NavPanel, OpenParkingNote, ProfileView, SearchBar, type Ctx, type Parked } from './components/Screens'
 
 type Tab = 'list' | 'map' | 'profile'
 type Nav = { lotId: string; spot: number | null; notice: string | null }
@@ -11,34 +11,37 @@ type Nav = { lotId: string; spot: number | null; notice: string | null }
 const embed = new URLSearchParams(window.location.search).has('embed')
 
 export default function App() {
-  const [hour, setHour] = useState(10.5)
+  const [hour, setHour] = useState(8.5)
+  const [weekend, setWeekend] = useState(false)
   const [running, setRunning] = useState(true)
   const [tab, setTab] = useState<Tab>('list')
-  const [permit, setPermit] = useState<Permit>('EA')
-  const [favorites, setFavorites] = useState<string[]>(['branner'])
+  const [permit, setPermit] = useState<Permit>('C')
+  const [favorites, setFavorites] = useState<string[]>(['wilbur-garage'])
   const [selected, setSelected] = useState<string | null>(null)
   const [nav, setNav] = useState<Nav | null>(null)
   const [parked, setParked] = useState<(Parked & { index: number }) | null>(null)
   const [mapQuery, setMapQuery] = useState('')
-  const { spaces, events, fill } = useSensors(hour, running, parked && { lotId: parked.lotId, index: parked.index })
+  const { spaces, events, fill } = useSensors(hour, weekend, running, parked && { lotId: parked.lotId, index: parked.index })
 
-  // Keep the guided space honest: if someone takes it, move to the next closest one.
+  const usable = useMemo(() => Object.fromEntries(LOTS.map((l) => [l.id, usableIndices(permit, l, hour, weekend)])), [permit, hour, weekend])
+  const ctx: Ctx = { permit, hour, weekend, usable }
+  const firstFree = (lotId: string) => usable[lotId].find((i) => !spaces[lotId][i]) ?? null
+
+  // Keep the guided space honest: if someone takes it (or your permit stops covering it), move to the next closest one.
   useEffect(() => {
     if (!nav || nav.spot === null) return
-    const arr = spaces[nav.lotId]
-    if (!arr[nav.spot]) return
+    if (!spaces[nav.lotId][nav.spot] && usable[nav.lotId].includes(nav.spot)) return
     const lot = LOTS.find((l) => l.id === nav.lotId)!
-    const next = arr.findIndex((o) => !o)
+    const next = firstFree(nav.lotId)
     setNav({
       ...nav,
-      spot: next === -1 ? null : next,
-      notice: next === -1 ? null : `${spaceLabel(lot, nav.spot)} was just taken. Next closest: ${spaceLabel(lot, next)}.`,
+      spot: next,
+      notice: next === null ? null : `${spaceLabel(lot, nav.spot)} was just taken. Next closest: ${spaceLabel(lot, next)}.`,
     })
-  }, [spaces, nav])
+  }, [spaces, nav, usable])
 
   const startNav = (lotId: string) => {
-    const spot = spaces[lotId].findIndex((o) => !o)
-    setNav({ lotId, spot: spot === -1 ? null : spot, notice: null })
+    setNav({ lotId, spot: firstFree(lotId), notice: null })
     setSelected(null)
     setTab('map')
   }
@@ -52,8 +55,9 @@ export default function App() {
 
   const navLot = nav ? LOTS.find((l) => l.id === nav.lotId)! : null
   const alternative = navLot
-    ? LOTS.filter((l) => l.id !== navLot.id && l.permits.includes(permit) && freeCount(spaces[l.id]) > 0)
-        .map((l) => ({ lot: l, free: freeCount(spaces[l.id]) }))
+    ? LOTS.filter((l) => l.id !== navLot.id)
+        .map((l) => ({ lot: l, free: freeIn(spaces[l.id], usable[l.id]) }))
+        .filter((a) => a.free > 0)
         .sort((a, b) => distanceMi(a.lot) - distanceMi(b.lot))[0] ?? null
     : null
 
@@ -87,11 +91,30 @@ export default function App() {
             <span>Noon</span>
             <span>10 PM</span>
           </div>
+          <div className="seg" role="radiogroup" aria-label="Day">
+            <button role="radio" aria-checked={!weekend} className={!weekend ? 'on' : ''} onClick={() => setWeekend(false)}>
+              Weekday
+            </button>
+            <button role="radio" aria-checked={weekend} className={weekend ? 'on' : ''} onClick={() => setWeekend(true)}>
+              Weekend
+            </button>
+          </div>
+          <ul className="rules">
+            <li className={enforced({}, 'C', hour, weekend) ? 'on' : ''}>
+              <b>A / C</b> {enforced({}, 'C', hour, weekend) ? 'permit required (weekdays 6 AM–4 PM)' : 'open to everyone right now'}
+            </li>
+            <li className={enforced({}, 'P', hour, weekend) ? 'on' : ''}>
+              <b>Visitor</b> {enforced({}, 'P', hour, weekend) ? 'pay in ParkMobile (weekdays 8 AM–4 PM)' : 'free right now'}
+            </li>
+            <li className="on">
+              <b>Residential</b> enforced 24/7
+            </li>
+          </ul>
           <div className="row">
             <button className="ghost" onClick={() => setRunning(!running)}>
               {running ? '❚❚ Pause sensors' : '▶ Resume sensors'}
             </button>
-            <button className="ghost" disabled={!nav || nav.spot === null} onClick={() => nav && fill(nav.lotId)} title="Start navigating to a lot first">
+            <button className="ghost" disabled={!nav || nav.spot === null} onClick={() => nav && fill(nav.lotId, usable[nav.lotId])} title="Start navigating to a lot first">
               Fill my destination
             </button>
           </div>
@@ -133,17 +156,18 @@ export default function App() {
         </div>
 
         <div className="viewport">
-          {tab === 'list' && <ListView spaces={spaces} permit={permit} favorites={favorites} onOpen={open} onGo={startNav} />}
+          {tab === 'list' && <ListView spaces={spaces} ctx={ctx} favorites={favorites} onOpen={open} onGo={startNav} />}
 
           {tab === 'map' && (
             <div className="screen map-screen">
-              <CampusMap spaces={spaces} permit={permit} selected={selected ?? nav?.lotId ?? null} onSelect={(id) => !nav && setSelected(id)} route={navLot} />
+              <CampusMap spaces={spaces} usable={usable} selected={selected ?? nav?.lotId ?? null} onSelect={(id) => !nav && setSelected(id)} route={navLot} />
               {!nav && (
                 <div className="map-search">
                   <SearchBar value={mapQuery} onChange={setMapQuery} />
+                  {!mapMatch && !selLot && <OpenParkingNote ctx={ctx} />}
                   {mapMatch && (
                     <button className="suggest" onClick={() => (setSelected(mapMatch.id), setMapQuery(''))}>
-                      {mapMatch.name} · {freeCount(spaces[mapMatch.id])} open
+                      {mapMatch.name} · {freeIn(spaces[mapMatch.id], usable[mapMatch.id])} open for you
                     </button>
                   )}
                 </div>
@@ -152,7 +176,7 @@ export default function App() {
                 <LotSheet
                   lot={selLot}
                   spaces={spaces[selLot.id]}
-                  permit={permit}
+                  ctx={ctx}
                   fav={favorites.includes(selLot.id)}
                   onFav={() => toggleFav(selLot.id)}
                   onGo={() => startNav(selLot.id)}
@@ -163,6 +187,7 @@ export default function App() {
                 <NavPanel
                   lot={navLot}
                   spaces={spaces[navLot.id]}
+                  ctx={ctx}
                   spot={nav.spot}
                   notice={nav.notice}
                   alternative={alternative}
@@ -201,7 +226,7 @@ export default function App() {
         </nav>
       </div>
 
-      {!embed && <footer className="credits">Concept prototype by Andrew Huang · Lot names from Stanford; occupancy is simulated.</footer>}
+      {!embed && <footer className="credits">Concept prototype by Andrew Huang · Permit rules and prices from Stanford Transportation (2026); map is approximate and occupancy is simulated.</footer>}
     </div>
   )
 }

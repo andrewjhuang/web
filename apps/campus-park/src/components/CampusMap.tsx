@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { LOTS, ME, type Lot, type Permit } from '../data'
-import { freeCount, status, STATUS_COLOR, type Spaces } from '../sensors'
+import { LOTS, ME, type Lot } from '../data'
+import { freeIn, status, STATUS_COLOR, type Spaces } from '../sensors'
 
 export const MAP_W = 390
 export const MAP_H = 620
@@ -13,31 +13,47 @@ function rng(seed: number) {
   }
 }
 
-const ROADS = [
-  'M0 140 L390 128', // Campus Dr (north)
-  'M0 540 L390 560', // Campus Dr (south)
-  'M196 0 L196 620', // Palm Dr → Lasuen
-  'M36 0 L48 620', // Santa Teresa
-  'M362 0 L356 620', // Arguello / Escondido
-  'M0 400 L390 410', // Escondido Rd
-  'M48 250 L362 262', // Serra
+/** East–west streets the route can follow (y), and Lasuen St running south from the Oval (x = 196). */
+const EW = [132, 250, 372, 520]
+
+const STREETS: { d: string; name?: string; lx?: number; ly?: number; rot?: number }[] = [
+  { d: 'M70 0 L196 152', name: 'Palm Dr', lx: 118, ly: 66, rot: 50 },
+  { d: 'M196 152 L196 600', name: 'Lasuen St', lx: 202, ly: 486, rot: 90 },
+  { d: 'M0 132 C 120 118, 280 118, 390 140', name: 'Campus Dr', lx: 30, ly: 125 },
+  { d: 'M20 250 L380 250' },
+  { d: 'M10 372 L380 372', name: 'Serra St', lx: 250, ly: 366 },
+  { d: 'M120 520 L390 520', name: 'Campus Dr', lx: 330, ly: 514 },
+  { d: 'M72 132 L72 470', name: 'Santa Teresa St', lx: 78, ly: 300, rot: 90 },
+  { d: 'M350 140 L350 520', name: 'Escondido Rd', lx: 356, ly: 430, rot: 90 },
+  { d: 'M240 60 L340 60 L370 0', name: 'Galvez St', lx: 262, ly: 54 },
+  { d: 'M280 520 L280 620' },
 ]
 
-const LAKE = 'M18 590 C 10 520, 60 470, 120 480 S 150 560, 110 600 S 30 620, 18 590 Z'
+const LAKE = 'M14 600 C 6 530, 50 478, 112 486 S 160 560, 118 604 S 30 630, 14 600 Z'
+const STADIUM = { cx: 326, cy: 178, rx: 30, ry: 22 }
 
-const overlaps = (x: number, y: number, w: number, h: number) =>
-  LOTS.some((l) => x < l.x + l.w + 6 && x + w > l.x - 6 && y < l.y + l.h + 6 && y + h > l.y - 6) ||
-  (x < 170 && y > 460) || // lake
-  (Math.abs(x + w / 2 - 196) < 34 && y > 150 && y < 360) // quad + oval
+function blocked(x: number, y: number, w: number, h: number) {
+  const pad = 6
+  const hits = (ax: number, ay: number, aw: number, ah: number) => x < ax + aw + pad && x + w > ax - pad && y < ay + ah + pad && y + h > ay - pad
+  return (
+    LOTS.some((l) => hits(l.x, l.y - 20, l.w, l.h + 20)) ||
+    hits(0, 470, 170, 150) || // lake
+    hits(160, 150, 72, 200) || // oval + quad
+    hits(STADIUM.cx - STADIUM.rx, STADIUM.cy - STADIUM.ry, STADIUM.rx * 2, STADIUM.ry * 2)
+  )
+}
+
 function buildings() {
-  const r = rng(42)
+  const r = rng(7)
   const out: { x: number; y: number; w: number; h: number }[] = []
-  for (let i = 0; i < 260 && out.length < 70; i++) {
+  for (let i = 0; i < 400 && out.length < 80; i++) {
     const w = 10 + r() * 22
     const h = 8 + r() * 18
-    const x = 8 + r() * (MAP_W - 16 - w)
-    const y = 8 + r() * (MAP_H - 16 - h)
-    if (overlaps(x, y, w, h)) continue
+    const x = 6 + r() * (MAP_W - 12 - w)
+    const y = 6 + r() * (MAP_H - 12 - h)
+    if (blocked(x, y, w, h)) continue
+    // Keep buildings off the street grid.
+    if (EW.some((ry) => y < ry + 8 && y + h > ry - 8) || [72, 196, 350].some((rx) => x < rx + 8 && x + w > rx - 8)) continue
     if (out.some((b) => x < b.x + b.w + 4 && x + w > b.x - 4 && y < b.y + b.h + 4 && y + h > b.y - 4)) continue
     out.push({ x, y, w, h })
   }
@@ -46,13 +62,14 @@ function buildings() {
 
 export function CampusMap({
   spaces,
-  permit,
+  usable,
   selected,
   onSelect,
   route,
 }: {
   spaces: Spaces
-  permit: Permit
+  /** Per lot, the space indices the current permit may use right now. */
+  usable: Record<string, number[]>
   selected: string | null
   onSelect: (id: string) => void
   route?: Lot | null
@@ -60,65 +77,76 @@ export function CampusMap({
   const blds = useMemo(buildings, [])
   // With a sheet open, slide the map up so the focused lot sits in the visible top half.
   const focus = LOTS.find((l) => l.id === selected)
-  const shift = focus ? Math.min(260, Math.max(0, focus.y - 170)) : 0
+  const shift = focus ? Math.min(420, Math.max(0, focus.y - 140)) : 0
 
   return (
-    <svg className="map" viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label="Campus map of parking lots">
+    <svg className="map" viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label="Stanford campus map of parking lots">
       <rect width={MAP_W} height={MAP_H} fill="#f4f2df" />
       <g className="pan" style={{ transform: `translateY(${-shift}px)` }}>
-      {/* Fields */}
-      <rect x="250" y="440" width="90" height="44" rx="6" fill="#cfe8b0" />
-      <rect x="70" y="200" width="70" height="40" rx="6" fill="#cfe8b0" />
-      <ellipse cx="196" cy="200" rx="30" ry="40" fill="#bfe09c" />
-      <path d={LAKE} fill="#bcb6f2" />
-      <text x="62" y="560" className="map-label">Lake Lagunita</text>
-      {ROADS.map((d) => (
-        <g key={d}>
-          <path d={d} stroke="#e4e0c8" strokeWidth="11" fill="none" />
-          <path d={d} stroke="#fff" strokeWidth="8" fill="none" />
-        </g>
-      ))}
-      {blds.map((b, i) => (
-        <rect key={i} x={b.x} y={b.y} width={b.w} height={b.h} rx="2" fill="#d8d8d4" />
-      ))}
-      {/* Main Quad */}
-      <rect x="168" y="282" width="56" height="54" rx="3" fill="#cfcac0" />
-      <rect x="180" y="294" width="32" height="30" fill="#f4f2df" />
-      <text x="196" y="354" textAnchor="middle" className="map-label">Main Quad</text>
-      <text x="196" y="204" textAnchor="middle" className="map-label">The Oval</text>
+        {/* Green spaces */}
+        <rect x="90" y="196" width="64" height="40" rx="6" fill="#cfe8b0" />
+        <rect x="248" y="428" width="86" height="40" rx="6" fill="#cfe8b0" />
+        <ellipse cx="196" cy="196" rx="28" ry="38" fill="#bfe09c" />
+        <ellipse {...STADIUM} fill="#cfe8b0" stroke="#b9d79a" strokeWidth="3" />
+        <path d={LAKE} fill="#bcb6f2" />
 
-      {route && <Route lot={route} />}
-
-      {LOTS.map((lot) => {
-        const free = freeCount(spaces[lot.id])
-        const st = status(free, lot.capacity)
-        const allowed = lot.permits.includes(permit)
-        const isSel = selected === lot.id
-        return (
-          <g
-            key={lot.id}
-            className={`lot ${isSel ? 'selected' : ''} ${allowed ? '' : 'disallowed'}`}
-            onClick={() => onSelect(lot.id)}
-            role="button"
-            tabIndex={0}
-            aria-label={`${lot.name}: ${free} open`}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(lot.id)}
-          >
-            <rect x={lot.x} y={lot.y} width={lot.w} height={lot.h} rx="4" fill={STATUS_COLOR[st]} className="lot-shape" />
-            {lot.garage && <path d={`M${lot.x + 6} ${lot.y + lot.h - 6} L${lot.x + lot.w - 6} ${lot.y + 6}`} stroke="#fff" strokeOpacity=".5" strokeWidth="2" />}
-            <g transform={`translate(${lot.x + lot.w / 2} ${lot.y - 9})`} className="lot-pin">
-              <rect x="-15" y="-10" width="30" height="18" rx="9" fill="#fff" stroke={STATUS_COLOR[st]} strokeWidth="2" />
-              <text textAnchor="middle" y="3.5" className="lot-count">
-                {free}
-              </text>
-            </g>
+        {STREETS.map((s) => (
+          <g key={s.d}>
+            <path d={s.d} stroke="#e4e0c8" strokeWidth="11" fill="none" />
+            <path d={s.d} stroke="#fff" strokeWidth="8" fill="none" />
           </g>
-        )
-      })}
+        ))}
+        {blds.map((b, i) => (
+          <rect key={i} x={b.x} y={b.y} width={b.w} height={b.h} rx="2" fill="#d8d8d4" />
+        ))}
 
-      {/* You are here */}
-      <circle cx={ME.x} cy={ME.y} r="16" fill="#4a7bf7" opacity=".18" className="pulse" />
-      <circle cx={ME.x} cy={ME.y} r="7" fill="#4a7bf7" stroke="#fff" strokeWidth="3" />
+        {/* Main Quad */}
+        <rect x="168" y="284" width="56" height="54" rx="3" fill="#cfcac0" />
+        <rect x="180" y="296" width="32" height="30" fill="#f4f2df" />
+
+        {STREETS.filter((s) => s.name).map((s) => (
+          <text key={s.d} x={s.lx} y={s.ly} className="street-label" transform={s.rot ? `rotate(${s.rot} ${s.lx} ${s.ly})` : undefined}>
+            {s.name}
+          </text>
+        ))}
+        <text x="196" y="352" textAnchor="middle" className="map-label">Main Quad</text>
+        <text x="196" y="200" textAnchor="middle" className="map-label">The Oval</text>
+        <text x={STADIUM.cx} y={STADIUM.cy + 3} textAnchor="middle" className="map-label">Stadium</text>
+        <text x="66" y="560" className="map-label">Lake Lagunita</text>
+        <text x="300" y="604" textAnchor="middle" className="map-label">Escondido Village</text>
+
+        {route && <Route lot={route} />}
+
+        {LOTS.map((lot) => {
+          const idx = usable[lot.id]
+          const free = freeIn(spaces[lot.id], idx)
+          const st = idx.length ? status(free, idx.length) : 'full'
+          const isSel = selected === lot.id
+          return (
+            <g
+              key={lot.id}
+              className={`lot ${isSel ? 'selected' : ''} ${idx.length ? '' : 'disallowed'}`}
+              onClick={() => onSelect(lot.id)}
+              role="button"
+              tabIndex={0}
+              aria-label={`${lot.name}: ${idx.length ? `${free} open for you` : 'not valid for your permit'}`}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(lot.id)}
+            >
+              <rect x={lot.x} y={lot.y} width={lot.w} height={lot.h} rx="4" fill={idx.length ? STATUS_COLOR[st] : '#eceef2'} className="lot-shape" />
+              {lot.garage && <path d={`M${lot.x + 6} ${lot.y + lot.h - 6} L${lot.x + lot.w - 6} ${lot.y + 6}`} stroke="#fff" strokeOpacity=".5" strokeWidth="2" />}
+              <g transform={`translate(${lot.x + lot.w / 2} ${lot.y - 9})`} className="lot-pin">
+                <rect x="-15" y="-10" width="30" height="18" rx="9" fill="#fff" stroke={idx.length ? STATUS_COLOR[st] : '#b9bcc6'} strokeWidth="2" />
+                <text textAnchor="middle" y="3.5" className="lot-count">
+                  {idx.length ? free : '–'}
+                </text>
+              </g>
+            </g>
+          )
+        })}
+
+        {/* You are here */}
+        <circle cx={ME.x} cy={ME.y} r="16" fill="#4a7bf7" opacity=".18" className="pulse" />
+        <circle cx={ME.x} cy={ME.y} r="7" fill="#4a7bf7" stroke="#fff" strokeWidth="3" />
       </g>
     </svg>
   )
@@ -127,8 +155,8 @@ export function CampusMap({
 function Route({ lot }: { lot: Lot }) {
   const tx = lot.x + lot.w / 2
   const ty = lot.y + lot.h / 2
-  // Follow Palm Dr, then the nearest east–west road, then into the lot.
-  const roadY = Math.abs(ty - 262) < Math.abs(ty - 410) ? (ty < 200 ? 134 : 258) : 405
+  // Down Lasuen St to the nearest east–west street, across, then into the lot.
+  const roadY = EW.reduce((best, y) => (Math.abs(y - ty) < Math.abs(best - ty) ? y : best))
   const d = `M${ME.x} ${ME.y} L196 ${roadY} L${tx} ${roadY} L${tx} ${ty}`
   return (
     <g>

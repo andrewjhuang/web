@@ -1,19 +1,47 @@
 import { useEffect, useState } from 'react'
-import { distanceMi, driveMin, LOTS, PERMITS, spaceLabel, type Lot, type Permit } from '../data'
-import { freeCount, status, STATUS_COLOR, type Spaces } from '../sensors'
-import { GoButton, Icon, PermitChip, Star } from './bits'
+import {
+  canPark,
+  capacity,
+  distanceMi,
+  driveMin,
+  enforced,
+  LOTS,
+  PERMITS,
+  spaceLabel,
+  ZONE_NAME,
+  type Lot,
+  type Permit,
+} from '../data'
+import { freeIn, status, STATUS_COLOR, type Spaces } from '../sensors'
+import { GoButton, Icon, Star, ZoneChip } from './bits'
+
+/** Time and permit context shared by every screen. */
+export type Ctx = { permit: Permit; hour: number; weekend: boolean; usable: Record<string, number[]> }
+
+const lotZones = (lot: Lot) => [...new Set(lot.zones.map((b) => b.zone))]
+
+/** Shown when commuter and visitor rules are off (weekday evenings, weekends). */
+export function OpenParkingNote({ ctx }: { ctx: Ctx }) {
+  const commuterOff = ctx.weekend || ctx.hour >= 16 || ctx.hour < 6
+  if (!commuterOff) return null
+  return (
+    <p className="open-note">
+      {ctx.weekend ? 'Weekend: ' : 'After 4 PM: '}'A', 'C' and visitor spaces are open to everyone. Residential spaces stay enforced 24/7.
+    </p>
+  )
+}
 
 /* ---------------- List ---------------- */
 
 export function ListView({
   spaces,
-  permit,
+  ctx,
   favorites,
   onOpen,
   onGo,
 }: {
   spaces: Spaces
-  permit: Permit
+  ctx: Ctx
   favorites: string[]
   onOpen: (id: string) => void
   onGo: (id: string) => void
@@ -22,11 +50,11 @@ export function ListView({
   const [mineOnly, setMineOnly] = useState(true)
   const [sort, setSort] = useState<'near' | 'open'>('near')
 
+  const free = (l: Lot) => freeIn(spaces[l.id], ctx.usable[l.id])
   const q = query.trim().toLowerCase()
-  const lots = LOTS.filter((l) => (!mineOnly || l.permits.includes(permit)) && (!q || `${l.name} ${l.address}`.toLowerCase().includes(q))).sort(
+  const lots = LOTS.filter((l) => (!mineOnly || ctx.usable[l.id].length > 0) && (!q || `${l.name} ${l.address}`.toLowerCase().includes(q))).sort(
     (a, b) =>
-      Number(favorites.includes(b.id)) - Number(favorites.includes(a.id)) ||
-      (sort === 'near' ? distanceMi(a) - distanceMi(b) : freeCount(spaces[b.id]) - freeCount(spaces[a.id])),
+      Number(favorites.includes(b.id)) - Number(favorites.includes(a.id)) || (sort === 'near' ? distanceMi(a) - distanceMi(b) : free(b) - free(a)),
   )
 
   return (
@@ -34,7 +62,7 @@ export function ListView({
       <SearchBar value={query} onChange={setQuery} />
       <div className="filters">
         <button className={`pill ${mineOnly ? 'on' : ''}`} onClick={() => setMineOnly(!mineOnly)} aria-pressed={mineOnly}>
-          <PermitChip p={permit} /> lots only
+          <ZoneChip z={ctx.permit} /> can park
         </button>
         <button className={`pill ${sort === 'near' ? 'on' : ''}`} onClick={() => setSort('near')} aria-pressed={sort === 'near'}>
           Nearest
@@ -43,11 +71,15 @@ export function ListView({
           Most open
         </button>
       </div>
+      <OpenParkingNote ctx={ctx} />
       <div className="cards">
-        {lots.length === 0 && <p className="empty">No lots match “{query}”.</p>}
+        {lots.length === 0 && (
+          <p className="empty">{q ? `No lots match “${query}”.` : `No ${ctx.permit} lots in this prototype yet. Try another permit in Profile.`}</p>
+        )}
         {lots.map((l) => {
-          const free = freeCount(spaces[l.id])
-          const st = status(free, l.capacity)
+          const idx = ctx.usable[l.id]
+          const f = free(l)
+          const st = idx.length ? status(f, idx.length) : 'full'
           return (
             <div key={l.id} className="card" role="button" tabIndex={0} onClick={() => onOpen(l.id)} onKeyDown={(e) => e.key === 'Enter' && onOpen(l.id)}>
               <div className="card-top">
@@ -58,16 +90,16 @@ export function ListView({
                 <span className="card-dist">{distanceMi(l)} mi</span>
               </div>
               <div className="chips">
-                {l.permits.map((p) => (
-                  <PermitChip key={p} p={p} dim={p !== permit} />
+                {lotZones(l).map((z) => (
+                  <ZoneChip key={z} z={z} dim={!l.zones.some((b) => b.zone === z && canPark(ctx.permit, l, b, ctx.hour, ctx.weekend))} />
                 ))}
               </div>
               <div className="card-bottom">
                 <span className="remaining">
-                  <i style={{ background: STATUS_COLOR[st] }} />
-                  {free === 0 ? 'Full' : `${free} remaining`}
+                  <i style={{ background: idx.length ? STATUS_COLOR[st] : '#b9bcc6' }} />
+                  {idx.length === 0 ? 'Not valid for your permit' : f === 0 ? 'Full' : `${f} remaining for you`}
                 </span>
-                {free > 0 && l.permits.includes(permit) && <GoButton onClick={() => onGo(l.id)} label={`Navigate to ${l.name}`} />}
+                {f > 0 && <GoButton onClick={() => onGo(l.id)} label={`Navigate to ${l.name}`} />}
               </div>
             </div>
           )
@@ -91,7 +123,7 @@ export function SearchBar({ value, onChange, placeholder = 'Where to park?' }: {
 export function LotSheet({
   lot,
   spaces,
-  permit,
+  ctx,
   fav,
   onFav,
   onGo,
@@ -99,14 +131,15 @@ export function LotSheet({
 }: {
   lot: Lot
   spaces: boolean[]
-  permit: Permit
+  ctx: Ctx
   fav: boolean
   onFav: () => void
   onGo: () => void
   onClose: () => void
 }) {
-  const free = freeCount(spaces)
-  const allowed = lot.permits.includes(permit)
+  const idx = ctx.usable[lot.id]
+  const free = freeIn(spaces, idx)
+  const cap = capacity(lot)
   return (
     <div className="sheet">
       <button className="grabber" onClick={onClose} aria-label="Close" />
@@ -118,52 +151,68 @@ export function LotSheet({
         </div>
         <span className="card-dist">{distanceMi(lot)} mi</span>
       </div>
-      <div className="chips">
-        {lot.permits.map((p) => (
-          <PermitChip key={p} p={p} dim={p !== permit} />
-        ))}
-      </div>
       <div className="sheet-stats">
         <div>
-          <strong style={{ color: STATUS_COLOR[status(free, lot.capacity)] }}>{free} remaining</strong>
-          <span>{lot.capacity - free} unavailable</span>
+          {idx.length ? (
+            <strong style={{ color: STATUS_COLOR[status(free, idx.length)] }}>{free} remaining for you</strong>
+          ) : (
+            <strong className="not-valid">Not valid for your {ctx.permit} permit</strong>
+          )}
+          <span>
+            {cap - spaces.filter((o) => !o).length} of {cap} spaces taken
+          </span>
         </div>
-        {allowed && free > 0 && <GoButton onClick={onGo} label={`Navigate to ${lot.name}`} />}
+        {free > 0 && <GoButton onClick={onGo} label={`Navigate to ${lot.name}`} />}
       </div>
-      {!allowed && <p className="warn">Your {permit} permit isn't valid here.</p>}
-      <SensorGrid lot={lot} spaces={spaces} />
+      <ZoneBreakdown lot={lot} spaces={spaces} ctx={ctx} />
+      {capacity(lot) <= 80 && <SensorGrid lot={lot} spaces={spaces} usable={idx} />}
     </div>
   )
 }
 
-export function SensorGrid({ lot, spaces, highlight }: { lot: Lot; spaces: boolean[]; highlight?: number | null }) {
-  if (lot.garage) {
-    const levels = Math.ceil(lot.capacity / 80)
-    return (
-      <div className="levels">
-        <div className="grid-caption">Live sensors · by level</div>
-        {Array.from({ length: levels }, (_, lv) => {
-          const slice = spaces.slice(lv * 80, lv * 80 + 80)
-          const f = freeCount(slice)
-          return (
-            <div key={lv} className="level">
-              <span>Level {lv + 1}</span>
-              <div className="bar">
-                <div style={{ width: `${(1 - f / slice.length) * 100}%` }} />
-              </div>
-              <span className="level-free">{f} open</span>
+function ZoneBreakdown({ lot, spaces, ctx }: { lot: Lot; spaces: boolean[]; ctx: Ctx }) {
+  let start = 0
+  return (
+    <div className="zones">
+      <div className="grid-caption">Live sensors{lot.garage ? ' · whole garage' : ''}</div>
+      {lot.zones.map((b) => {
+        const range = Array.from({ length: b.count }, (_, k) => start + k)
+        start += b.count
+        const f = freeIn(spaces, range)
+        const ok = canPark(ctx.permit, lot, b, ctx.hour, ctx.weekend)
+        const enf = enforced(lot, b.zone, ctx.hour, ctx.weekend)
+        return (
+          <div key={b.zone} className={`zone-row ${ok ? '' : 'no'}`}>
+            <ZoneChip z={b.zone} dim={!ok} />
+            <span className="zone-name">
+              {ZONE_NAME[b.zone]}
+              {b.shared && <em> · shared with A/C</em>}
+            </span>
+            <div className="bar">
+              <div style={{ width: `${(1 - f / b.count) * 100}%` }} />
             </div>
-          )
-        })}
-      </div>
-    )
-  }
+            <span className="zone-free">
+              {f}/{b.count}
+            </span>
+            <span className={`zone-rule ${ok ? 'yes' : ''}`}>{!enf ? 'Open now' : ok ? 'Yours' : 'Not valid'}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+export function SensorGrid({ lot, spaces, usable, highlight }: { lot: Lot; spaces: boolean[]; usable: number[]; highlight?: number | null }) {
   return (
     <div>
-      <div className="grid-caption">Live sensors · entrance on the left</div>
+      <div className="grid-caption">Each space · entrance on the left</div>
       <div className="spaces">
         {spaces.map((occ, i) => (
-          <span key={i} className={`space ${occ ? 'occ' : 'free'} ${highlight === i ? 'target' : ''}`} title={`${spaceLabel(lot, i)} · ${occ ? 'taken' : 'open'}`}>
+          <span
+            key={i}
+            className={`space ${occ ? 'occ' : 'free'} ${usable.includes(i) ? '' : 'other'} ${highlight === i ? 'target' : ''}`}
+            title={`${spaceLabel(lot, i)} · ${occ ? 'taken' : 'open'}`}
+          >
             {highlight === i ? '★' : ''}
           </span>
         ))}
@@ -177,6 +226,7 @@ export function SensorGrid({ lot, spaces, highlight }: { lot: Lot; spaces: boole
 export function NavPanel({
   lot,
   spaces,
+  ctx,
   spot,
   notice,
   alternative,
@@ -186,6 +236,7 @@ export function NavPanel({
 }: {
   lot: Lot
   spaces: boolean[]
+  ctx: Ctx
   spot: number | null
   notice: string | null
   alternative: { lot: Lot; free: number } | null
@@ -205,7 +256,7 @@ export function NavPanel({
       <div className="sheet nav-sheet">
         {full ? (
           <>
-            <h3 className="alert-title">{lot.name} just filled up</h3>
+            <h3 className="alert-title">No {ctx.permit} spaces left at {lot.name}</h3>
             <p className="muted">Sensors caught it before you got there.</p>
             {alternative ? (
               <button className="primary" onClick={onReroute}>
@@ -217,12 +268,16 @@ export function NavPanel({
           </>
         ) : (
           <>
-            <p className="muted small">Closest open space</p>
+            <p className="muted small">Closest open space for your permit</p>
             <h3 className="spot">
               Space {spaceLabel(lot, spot)} <span className="live">● live</span>
             </h3>
             {notice && <p className="notice">{notice}</p>}
-            <SensorGrid lot={lot} spaces={spaces} highlight={spot} />
+            {capacity(lot) <= 80 ? (
+              <SensorGrid lot={lot} spaces={spaces} usable={ctx.usable[lot.id]} highlight={spot} />
+            ) : (
+              <ZoneBreakdown lot={lot} spaces={spaces} ctx={ctx} />
+            )}
             <button className="primary" onClick={onParked}>
               I've parked
             </button>
@@ -240,6 +295,12 @@ export function NavPanel({
 
 export type Parked = { lotId: string; label: string; since: number }
 
+const GROUPS: { title: string; permits: Permit[] }[] = [
+  { title: 'Commuter', permits: ['A', 'C', 'MC'] },
+  { title: 'Resident', permits: ['EA', 'ES', 'EVF', 'SJ', 'SO', 'WE'] },
+  { title: 'Visitor', permits: ['V'] },
+]
+
 export function ProfileView({
   permit,
   setPermit,
@@ -255,22 +316,45 @@ export function ProfileView({
   onEndParking: () => void
   onOpen: (id: string) => void
 }) {
+  const info = PERMITS[permit]
   return (
     <div className="screen profile">
       <h2>Profile</h2>
       {parked && <ParkedCard parked={parked} onEnd={onEndParking} />}
-      <section>
-        <h4>My permit</h4>
-        <div className="permit-list">
-          {(Object.keys(PERMITS) as Permit[]).map((p) => (
-            <button key={p} className={`permit-row ${permit === p ? 'on' : ''}`} onClick={() => setPermit(p)} aria-pressed={permit === p}>
-              <PermitChip p={p} />
-              <span>{PERMITS[p].label.split(' · ')[1]}</span>
-              {permit === p && <span className="check">✓</span>}
-            </button>
-          ))}
+
+      <section className="permit-card">
+        <div className="permit-card-head">
+          <ZoneChip z={permit} />
+          <strong>{info.name}</strong>
+          {info.monthly && (
+            <span className="price">
+              {info.daily}/day · {info.monthly}/mo
+            </span>
+          )}
         </div>
+        <dl>
+          <dt>Who</dt>
+          <dd>{info.who}</dd>
+          <dt>Valid in</dt>
+          <dd>{info.validIn}</dd>
+        </dl>
+        {info.note && <p className="muted small">{info.note}</p>}
       </section>
+
+      {GROUPS.map((g) => (
+        <section key={g.title}>
+          <h4>{g.title}</h4>
+          <div className="permit-grid">
+            {g.permits.map((p) => (
+              <button key={p} className={`permit-btn ${permit === p ? 'on' : ''}`} onClick={() => setPermit(p)} aria-pressed={permit === p}>
+                <ZoneChip z={p} />
+                <span>{PERMITS[p].short}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
+
       <section>
         <h4>Favorite lots</h4>
         {favorites.length === 0 ? (
@@ -286,6 +370,13 @@ export function ProfileView({
           })
         )}
       </section>
+      <p className="source">
+        Permit rules and 2026 prices from{' '}
+        <a href="https://transportation.stanford.edu/parking-stanford/purchase-parking/frequently-asked-questions-faqs-parking-permits" target="_blank" rel="noreferrer">
+          Stanford Transportation
+        </a>
+        .
+      </p>
     </div>
   )
 }

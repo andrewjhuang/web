@@ -1,9 +1,9 @@
-import { PERMITS, type Permit } from '../data'
+import { ZONE_COLOR, type Permit, type Zone } from '../data'
 
-export function PermitChip({ p, dim }: { p: Permit; dim?: boolean }) {
+export function ZoneChip({ z, dim }: { z: Zone | Permit; dim?: boolean }) {
   return (
-    <span className={`permit ${dim ? 'dim' : ''}`} style={{ background: PERMITS[p].color }} title={PERMITS[p].label}>
-      {p}
+    <span className={`permit ${dim ? 'dim' : ''}`} style={{ background: ZONE_COLOR[z] }}>
+      {z === 'V' ? 'P' : z}
     </span>
   )
 }
