@@ -84,7 +84,8 @@ button {
   user-select: none;
 }
 
-.stage.shaking .scene {
+/* Shake the room, but not the scream controls, so the hold button stays under your finger. */
+.stage.shaking .scene > *:not(.scream-mode) {
   animation: shake 0.09s linear infinite;
 }
 
@@ -295,9 +296,9 @@ button {
 .window {
   position: absolute;
   left: 60px;
-  top: 60px;
+  top: 50px;
   width: 380px;
-  height: 220px;
+  height: 190px;
   border: 10px solid #fff;
   border-radius: 6px;
   background: linear-gradient(#a7d3ef, #e8f3f7);
@@ -309,7 +310,7 @@ button {
   position: absolute;
   left: -40px;
   right: -40px;
-  bottom: -60px;
+  bottom: -70px;
   height: 140px;
   border-radius: 50% 50% 0 0;
   background: #b9c98d;
@@ -317,9 +318,9 @@ button {
 
 .oak {
   position: absolute;
-  bottom: 30px;
+  bottom: 26px;
   width: 70px;
-  height: 56px;
+  height: 52px;
   border-radius: 50%;
   background: #6f8f4d;
 }
@@ -328,9 +329,9 @@ button {
   content: '';
   position: absolute;
   left: 32px;
-  top: 46px;
+  top: 44px;
   width: 6px;
-  height: 22px;
+  height: 20px;
   background: #6a4a2c;
 }
 
@@ -340,7 +341,7 @@ button {
 
 .o2 {
   left: 170px;
-  bottom: 44px;
+  bottom: 40px;
   transform: scale(0.8);
 }
 
@@ -360,8 +361,8 @@ button {
 
 .office-sign {
   position: absolute;
-  left: 480px;
-  top: 70px;
+  left: 470px;
+  top: 52px;
   font-size: 40px;
   font-weight: 900;
   letter-spacing: -0.05em;
@@ -387,45 +388,167 @@ button {
   border-radius: 4px;
 }
 
+/* Laptop showing a Keynote-style pitch deck */
 .laptop {
   position: absolute;
-  left: 110px;
-  top: -70px;
-  width: 230px;
-  height: 140px;
-  background: #2b2b2b;
-  border-radius: 10px 10px 2px 2px;
-  padding: 8px;
+  left: 100px;
+  top: -138px;
+  width: 330px;
+  height: 196px;
+  background: #1f1f1f;
+  border-radius: 12px 12px 3px 3px;
+  padding: 8px 8px 10px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
 }
 
-.screen-glow {
+.laptop-base {
+  position: absolute;
+  left: 80px;
+  top: 56px;
+  width: 370px;
+  height: 8px;
+  background: linear-gradient(#d4d4d4, #9a9a9a);
+  border-radius: 0 0 10px 10px;
+}
+
+.kn {
   width: 100%;
   height: 100%;
   border-radius: 4px;
-  background: linear-gradient(135deg, #f8f8f8, #dfe6ef);
+  background: #ececec;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kn-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+  padding: 0 6px;
+  background: #d9d9d9;
+  font-size: 8px;
+  color: #555;
+}
+
+.kn-bar i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff5f57;
+}
+
+.kn-bar i:nth-child(2) {
+  background: #febc2e;
+}
+
+.kn-bar i:nth-child(3) {
+  background: #28c840;
+  margin-right: 6px;
+}
+
+.kn-body {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  min-height: 0;
+}
+
+.kn-thumbs {
+  width: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kn-thumbs span {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 2px;
   display: grid;
   place-items: center;
-  font-size: 10px;
-  color: #555;
+}
+
+.kn-thumbs span.on {
+  border: 2px solid #2f7cf6;
+}
+
+.kn-thumbs em {
+  width: 60%;
+  height: 3px;
+  background: #bbb;
+}
+
+.kn-slide {
+  flex: 1;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.kn-slide b {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #111;
+}
+
+.kn-chart {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  padding: 6px 4px 0;
+  border-bottom: 1.5px solid #333;
+}
+
+.kn-chart span {
+  flex: 1;
+  background: var(--lime);
+  border-radius: 2px 2px 0 0;
+}
+
+.kn-chart span:last-child {
+  background: var(--coral);
+}
+
+.kn-note {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  background: #fff3a6;
+  font-family: var(--hand);
+  font-size: 12px;
+  padding: 2px 5px;
+  transform: rotate(4deg);
+  color: #333;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .coffee {
   position: absolute;
-  left: 380px;
+  left: 470px;
   top: 20px;
   font-size: 36px;
 }
 
 .coffee.c2 {
-  left: 420px;
+  left: 506px;
   transform: rotate(-12deg);
 }
 
 .notifs {
   position: absolute;
-  right: 36px;
+  right: 30px;
   top: 70px;
-  width: 360px;
+  width: 330px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -476,15 +599,17 @@ button {
   color: #777;
 }
 
+/* Sits on the floor strip under the desk so it never collides with the laptop. */
 .lobby-caption {
   position: absolute;
   left: 64px;
-  top: 312px;
+  bottom: 26px;
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  max-width: 380px;
+  max-width: 520px;
+  color: #3a2f22;
 }
 
 .storefront {
@@ -690,7 +815,7 @@ button {
 .tutorial {
   position: absolute;
   left: 50%;
-  top: 64px;
+  top: 54px;
   transform: translateX(-50%);
   background: rgba(17, 17, 17, 0.85);
   border-radius: 999px;
@@ -712,15 +837,6 @@ button {
 
 .light-strip {
   filter: drop-shadow(0 0 12px var(--glow));
-}
-
-.decal-text {
-  font-family: var(--display);
-  font-weight: 900;
-  font-size: 26px;
-  letter-spacing: 0.04em;
-  fill: #111;
-  fill-opacity: 0.75;
 }
 
 .spot {
@@ -818,7 +934,7 @@ button {
   top: 0;
   width: 220px;
   height: 600px;
-  clip-path: polygon(66px 118px, 172px 160px, 172px 446px, 66px 536px);
+  clip-path: polygon(58px 112px, 172px 124px, 172px 444px, 58px 546px);
   border-radius: 0;
 }
 
@@ -827,7 +943,7 @@ button {
 }
 
 .door-sign {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   fill: #fff;
   letter-spacing: 0.06em;
@@ -888,22 +1004,68 @@ button {
   transform: rotate(14deg);
 }
 
-.scream-hot {
-  left: 350px;
-  top: 470px;
-  width: 260px;
-  height: 84px;
+.scream-zone {
+  position: absolute;
+  left: 356px;
+  top: 478px;
+  width: 248px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+
+.zone-ring {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
+  border: 4px dashed rgba(17, 17, 17, 0.7);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.scream-hot:hover {
-  filter: none;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
+.zone-text {
+  position: relative;
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: 0.04em;
+  color: rgba(17, 17, 17, 0.75);
+  transition: color 0.2s, transform 0.2s;
 }
 
-.scream-hot .hot-label {
-  bottom: auto;
-  top: -30px;
+.zone-tip {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: var(--lime);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  opacity: 0;
+  transition: opacity 0.15s, top 0.15s;
+  pointer-events: none;
+}
+
+.scream-zone:hover .zone-ring,
+.scream-zone:focus-visible .zone-ring {
+  border-color: var(--lime);
+  background: rgba(155, 217, 74, 0.22);
+  box-shadow: 0 0 24px rgba(155, 217, 74, 0.6);
+}
+
+.scream-zone:hover .zone-text,
+.scream-zone:focus-visible .zone-text {
+  color: #2f5a10;
+  transform: scale(1.06);
+}
+
+.scream-zone:hover .zone-tip,
+.scream-zone:focus-visible .zone-tip {
+  opacity: 1;
+  top: -40px;
 }
 
 .balloon {
@@ -1139,6 +1301,13 @@ button {
   padding: 18px 34px;
   font-size: 20px;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.btn.hold:hover:not(:disabled) {
+  transform: none;
 }
 
 .mic-on {

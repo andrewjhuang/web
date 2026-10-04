@@ -83,10 +83,34 @@ export function Lobby({ stress, setStress, onEnter }: { stress: number; setStres
       <div className="office-sign">startX</div>
       <div className="desk" aria-hidden>
         <div className="laptop">
-          <div className="screen-glow">
-            <span>pitch_deck_v37_FINAL_final.key</span>
+          <div className="kn">
+            <div className="kn-bar">
+              <i />
+              <i />
+              <i />
+              <span>pitch_deck_v37_FINAL_final.key</span>
+            </div>
+            <div className="kn-body">
+              <div className="kn-thumbs">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span key={i} className={i === 2 ? 'on' : ''}>
+                    <em />
+                  </span>
+                ))}
+              </div>
+              <div className="kn-slide">
+                <b>Why now?</b>
+                <div className="kn-chart">
+                  {[18, 24, 22, 34, 48, 70, 96].map((h, i) => (
+                    <span key={i} style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+                <span className="kn-note">TODO: make TAM bigger??</span>
+              </div>
+            </div>
           </div>
         </div>
+        <div className="laptop-base" />
         <div className="coffee">☕</div>
         <div className="coffee c2">☕</div>
       </div>

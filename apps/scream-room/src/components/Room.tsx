@@ -162,13 +162,6 @@ export function Room({
         <polygon points={`0,0 ${W},0 ${BACK.x1},${BACK.y0} ${BACK.x0},${BACK.y0}`} fill="url(#lamp)" />
         <rect x={BACK.x0} y={BACK.y0} width={BACK.x1 - BACK.x0} height="160" fill="url(#lamp)" />
 
-        {/* Scream-here floor decal: situational nudging */}
-        <g className="decal" transform="translate(480 512)">
-          <ellipse rx="120" ry="34" fill="none" stroke="#111" strokeOpacity="0.7" strokeWidth="4" strokeDasharray="14 10" />
-          <text textAnchor="middle" y="9" className="decal-text">
-            SCREAM HERE
-          </text>
-        </g>
       </svg>
 
       {/* Sticky-note wall */}
@@ -193,7 +186,7 @@ export function Room({
         <span className="neon-cone">🍦</span>
         <span className="hot-label">Change the vibe</span>
       </button>
-      <div className="arrow-sign" style={{ left: 372, top: 404 }} aria-hidden>
+      <div className="arrow-sign" style={{ left: 300, top: 296 }} aria-hidden>
         ↓ scream here
         <br />
         (no one can hear you)
@@ -207,12 +200,19 @@ export function Room({
         aria-label={locked ? 'Unlock the door' : 'Lock the door'}
       >
         <svg viewBox="0 0 220 600" width="220" height="600" aria-hidden>
-          <polygon points="66,118 172,160 172,446 66,536" fill={th.trim} />
-          <polygon points="74,130 164,166 164,440 74,522" fill="none" stroke="#ffffff" strokeOpacity="0.15" strokeWidth="2" />
-          <circle cx="152" cy="318" r="6" fill="#d9c08a" />
-          <g transform="translate(90 200) skewY(21)">
-            <rect width="58" height="22" rx="4" fill={locked ? '#d64545' : '#4fa36a'} />
-            <text x="29" y="15" textAnchor="middle" className="door-sign">
+          {/* Edges follow lines to the vanishing point (≈489,156), so the door sits flat on the side wall. */}
+          <polygon points="58,112 172,124 172,444 58,546" fill="#000" opacity="0.18" />
+          <polygon points="66,118 172,128 172,444 66,540" fill={th.trim} />
+          <polygon points="76,134 162,141 162,439 76,523" fill="none" stroke="#ffffff" strokeOpacity="0.14" strokeWidth="2" />
+          <polygon points="76,330 162,322" stroke="#ffffff" strokeOpacity="0.1" strokeWidth="2" />
+          <ellipse cx="153" cy="300" rx="4" ry="6" fill="#d9c08a" />
+          <rect x="151" y="298" width="9" height="3" rx="1.5" fill="#d9c08a" transform="rotate(-4 151 298)" />
+          {/* Sign plate drawn in the wall's perspective, with text mapped onto the same plane */}
+          <polygon points="88,176 152,171.5 152,193.5 88,201" fill="#000" opacity="0.25" transform="translate(2 2)" />
+          <polygon points="88,176 152,171.5 152,193.5 88,201" fill={locked ? '#c93b3b' : '#3f9a5e'} />
+          <polygon points="88,176 152,171.5 152,173.5 88,178" fill="#fff" opacity="0.25" />
+          <g transform="matrix(0.94 -0.066 0 0.96 88 176)">
+            <text x="34" y="17" textAnchor="middle" className="door-sign" textLength={locked ? 60 : 50} lengthAdjust="spacingAndGlyphs">
               {locked ? 'OCCUPIED' : 'VACANT'}
             </text>
           </g>
@@ -234,14 +234,17 @@ export function Room({
 
       {/* Scream zone hotspot */}
       <button
-        className="spot scream-hot"
+        className="scream-zone"
         onClick={() => {
           spaceOpened.current = false
           setOverlay('scream')
         }}
-        aria-label="Scream"
+        aria-label="Scream here (or hold the space bar)"
       >
-        <span className="hot-label">Scream (or hold space)</span>
+        {/* Floor decal: situational nudging */}
+        <span className="zone-ring" />
+        <span className="zone-text">SCREAM HERE</span>
+        <span className="zone-tip">Click, or hold space</span>
       </button>
 
       {/* Balloons */}
@@ -496,7 +499,7 @@ function BalloonArt({ color, face }: { color: string; face: number }) {
 /* ---------------- Soccer ball with simple floor physics ---------------- */
 
 function Ball({ onKick, onWall }: { onKick: () => void; onWall: (hard: number) => void }) {
-  const st = useRef({ u: 0.36, t: 0.62, vu: 0, vt: 0, z: 0, vz: 0, spin: 0 })
+  const st = useRef({ u: 0.2, t: 0.7, vu: 0, vt: 0, z: 0, vz: 0, spin: 0 })
   const [, force] = useState(0)
   const raf = useRef(0)
 
@@ -708,12 +711,16 @@ function ScreamMode({
       <div className="scream-controls">
         <button
           className="btn primary hold"
-          onPointerDown={() => {
+          onPointerDown={(e) => {
+            // Keep the pointer even if the shaking screen moves the button away from it.
+            e.currentTarget.setPointerCapture(e.pointerId)
             holding.current = true
             holdStart.current = performance.now()
           }}
           onPointerUp={() => (holding.current = false)}
-          onPointerLeave={() => (holding.current = false)}
+          onPointerCancel={() => (holding.current = false)}
+          onLostPointerCapture={() => (holding.current = false)}
+          onContextMenu={(e) => e.preventDefault()}
         >
           Hold to scream
         </button>
