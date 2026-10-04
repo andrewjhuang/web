@@ -12,7 +12,7 @@ Put each block at the top of its project page, right after the header. Every emb
 | --- | --- |
 | **Webflow** | Drag in an **Embed** element (Add panel → Components → Embed) directly under the page header, paste the code, Save. Custom code embeds need a paid site plan. |
 | **Squarespace** | Add a **Code** block under the header, set it to HTML, paste. If your plan doesn't run scripts in code blocks, the embed still works at the fallback height. |
-| **Framer** | Insert → **Embed**, choose **HTML**, paste. Set the Embed's width to **Fill** and pick **any height that fits your page** (see below). Framer sizes embed boxes itself, so the prototype adapts to the box instead. |
+| **Framer** | See the Framer section below: use the Embed's **URL** type, not the HTML snippets. |
 
 ## How the embeds fit any box
 
@@ -20,12 +20,39 @@ Put each block at the top of its project page, right after the header. Every emb
 - **Narrow box (under 760px wide, e.g. Framer's phone breakpoint)?** CampusPark and Fizz show just the phone and hide the side panel. Guild scrolls inside its box.
 - **I Scream Room** always scales and centers the game in whatever box it gets.
 
-## Suggested heights in Framer
+## Framer (Container → Stack → Embed)
 
-Pick whatever fits your layout; these just look good.
+The snippets further down have a fixed `height` written inside them, which overrides Framer's box. In Framer, use the Embed's **URL** type instead so the prototype fills exactly the box you size.
+
+| Layer | Width | Height | Notes |
+| --- | --- | --- | --- |
+| Container (section) | Fill | Fit | Grows around the stack. |
+| Stack | Fill | Fit | Optional Max Width ~1200. Vertical, so the header sits above the embed. |
+| **Embed** | **Fill** | **Fixed** | The only number that matters (see below). Type: **URL**. |
+
+URLs to paste:
+
+- Guild: `https://web-guild-together.vercel.app/?embed`
+- CampusPark: `https://web-campus-park.vercel.app/?embed`
+- Fizz: `https://web-fizz.vercel.app/?embed`
+- I Scream Room: `https://scream-room.vercel.app/?embed`
+
+Embed heights:
 
 | Project | Desktop | Phone breakpoint |
 | --- | --- | --- |
+| Guild | 600–700 | 640 (scrolls inside) |
+| CampusPark | 600–700 | 700 |
+| Fizz | 600–700 | 700 |
+| I Scream Room | 560–620 | 260 |
+
+For I Scream Room's “use my real voice” mic option, use **HTML** type instead with:
+
+```html
+<iframe src="https://scream-room.vercel.app/?embed" allow="microphone" style="width:100%;height:100%;border:0;border-radius:16px"></iframe>
+```
+
+--- | --- | --- |
 | Guild | 600–700px | 640px (scrolls inside) |
 | CampusPark | 600–700px | 640–760px |
 | Fizz | 600–700px | 640–760px |
