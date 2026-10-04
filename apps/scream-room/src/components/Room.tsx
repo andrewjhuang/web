@@ -141,8 +141,8 @@ export function Room({
           <>
             {/* The tested prototype: blue moving blankets on every wall */}
             <rect x={BACK.x0} y={BACK.y0} width={BACK.x1 - BACK.x0} height={BACK.y1 - BACK.y0} fill="url(#quilt)" />
-            <polygon points={`0,0 ${BACK.x0},${BACK.y0} ${BACK.x0},${BACK.y1} 0,${H}`} fill="url(#quilt)" />
-            <polygon points={`${W},0 ${BACK.x1},${BACK.y0} ${BACK.x1},${BACK.y1} ${W},${H}`} fill="url(#quilt)" />
+            <QuiltWall side="left" base={th.wall} stitch={th.wallDark} />
+            <QuiltWall side="right" base={th.wall} stitch={th.wallDark} />
           </>
         ) : (
           <>
@@ -234,7 +234,7 @@ export function Room({
 
       {/* Scream zone hotspot */}
       <button
-        className="scream-zone"
+        className={`scream-zone ${theme === 'original' ? 'on-dark' : ''}`}
         onClick={() => {
           spaceOpened.current = false
           setOverlay('scream')
@@ -419,6 +419,54 @@ function WaveWall({ side, base, color }: { side: 'left' | 'right'; base: string;
       </clipPath>
       <polygon points={poly} fill={base} />
       <g clipPath={`url(#${id})`}>{ribs}</g>
+    </g>
+  )
+}
+
+/**
+ * Moving-blanket stitching on a side wall, drawn in perspective: each zigzag row
+ * follows a line toward the vanishing point, and the zigzags shrink (in both
+ * period and height) as the wall recedes, instead of a flat repeating pattern.
+ */
+function QuiltWall({ side, base, stitch }: { side: 'left' | 'right'; base: string; stitch: string }) {
+  const top = (x: number) => (BACK.y0 * x) / BACK.x0
+  const bottom = (x: number) => H - ((H - BACK.y1) * x) / BACK.x0
+  // Local scale: 1 at the front edge, shrinking toward the back wall.
+  const scale = (x: number) => (bottom(x) - top(x)) / H
+  const rows = []
+  const N = 30
+  for (let i = 1; i < N; i++) {
+    const f = i / N
+    const pts: string[] = []
+    let phase = 0
+    let x = 0
+    while (x <= BACK.x0) {
+      const k = scale(x)
+      const y = top(x) + f * (bottom(x) - top(x)) + (phase % 2 === 0 ? -1 : 1) * 4.5 * k
+      pts.push(`${(side === 'left' ? x : W - x).toFixed(1)},${y.toFixed(1)}`)
+      x += 9 * k // half a zigzag, foreshortened
+      phase++
+    }
+    rows.push(<polyline key={i} points={pts.join(' ')} fill="none" stroke={stitch} strokeWidth={2 * scale(0)} strokeLinejoin="round" />)
+  }
+  // Vertical seams between blanket panels stay vertical but bunch up toward the back.
+  const seams = [0.18, 0.4, 0.62, 0.8].map((u) => {
+    const x = BACK.x0 * u
+    const sx = side === 'left' ? x : W - x
+    return <line key={u} x1={sx} y1={top(x)} x2={sx} y2={bottom(x)} stroke="#000" strokeOpacity="0.22" strokeWidth={3 * scale(x)} />
+  })
+  const poly = side === 'left' ? `0,0 ${BACK.x0},${BACK.y0} ${BACK.x0},${BACK.y1} 0,${H}` : `${W},0 ${BACK.x1},${BACK.y0} ${BACK.x1},${BACK.y1} ${W},${H}`
+  const id = `quilt-clip-${side}`
+  return (
+    <g>
+      <clipPath id={id}>
+        <polygon points={poly} />
+      </clipPath>
+      <polygon points={poly} fill={base} />
+      <g clipPath={`url(#${id})`}>
+        {rows}
+        {seams}
+      </g>
     </g>
   )
 }

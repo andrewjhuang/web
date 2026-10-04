@@ -1716,3 +1716,12 @@ blockquote {
     transition: none !important;
   }
 }
+
+/* The original prototype's floor is dark, so the decal goes light. */
+.scream-zone.on-dark .zone-ring {
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.scream-zone.on-dark .zone-text {
+  color: rgba(255, 255, 255, 0.85);
+}
