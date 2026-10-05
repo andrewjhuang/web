@@ -282,27 +282,14 @@ button {
   }
 }
 
-.fizz-mark circle {
-  fill: none;
-  stroke: var(--red);
-  stroke-width: 2.2;
-  transform-box: fill-box;
-  transform-origin: center;
+.fizz-mark {
+  display: inline-block;
+  flex: 0 0 auto;
+  color: #fff;
+  background-color: currentColor;
+  -webkit-mask: url('/bee.png') center / contain no-repeat;
+  mask: url('/bee.png') center / contain no-repeat;
   animation: bob 3.2s ease-in-out infinite;
-}
-
-.fizz-mark .b2 {
-  animation-delay: -0.8s;
-}
-
-.fizz-mark .b3 {
-  animation-delay: -1.6s;
-  fill: rgba(214, 58, 58, 0.35);
-}
-
-.fizz-mark .b4 {
-  animation-delay: -2.4s;
-  fill: rgba(214, 58, 58, 0.55);
 }
 
 @keyframes bob {

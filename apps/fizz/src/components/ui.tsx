@@ -39,15 +39,16 @@ export function Burst({ k, big }: { k: number; big?: boolean }) {
 }
 
 /** The fizz mark: a cluster of bubbles that gently bob. */
+/**
+ * The Fizz bee.
+ *
+ * Shipped as an alpha mask rather than a coloured image so CSS paints it with
+ * `currentColor` - it inherits white on the dark surfaces and the brand red
+ * wherever that reads better, and the mask is a third the weight of an RGBA
+ * copy of the same artwork.
+ */
 export function FizzMark({ size = 30 }: { size?: number }) {
-  return (
-    <svg className="fizz-mark" width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <circle className="b1" cx="12" cy="19" r="8" />
-      <circle className="b2" cx="22" cy="11" r="5.5" />
-      <circle className="b3" cx="24" cy="23" r="3.5" />
-      <circle className="b4" cx="9" cy="7" r="2.5" />
-    </svg>
-  )
+  return <span className="fizz-mark" style={{ width: size, height: size }} aria-hidden />
 }
 
 export function SaveButton({ on, onToggle, label, className = '' }: { on: boolean; onToggle: () => void; label: string; className?: string }) {
