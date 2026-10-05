@@ -1,4 +1,4 @@
-# ParkCampus — University ParkCampusing App
+# ParkCampus — University Parking App
 
 A campus parking concept that pairs a mobile app with parking-space sensors. Research with Stanford students and faculty informed the core interface and user flows. This is an interactive version of the Figma mockup.
 

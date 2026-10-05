@@ -72,7 +72,7 @@ export default function App() {
           <img src="/icon.svg" alt="" width={64} height={64} />
           <div>
             <h1>ParkCampus</h1>
-            <p>University ParkCampusing App</p>
+            <p>University Parking App</p>
           </div>
         </div>
         <p className="intro">
