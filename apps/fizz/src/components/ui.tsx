@@ -38,7 +38,6 @@ export function Burst({ k, big }: { k: number; big?: boolean }) {
   )
 }
 
-/** The fizz mark: a cluster of bubbles that gently bob. */
 /**
  * The Fizz bee.
  *
